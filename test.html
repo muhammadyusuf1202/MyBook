@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyKitob PRO v6.0 | AI Audio & Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root { --main: #2563eb; --gold: #fbbf24; --bg: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #1e293b; overflow-x: hidden; scroll-behavior: smooth; }
+        /* Tungi rejim ranglari */
+body.dark-mode {
+    background: #0f172a;
+    color: #f1f5f9;
+}
+
+.dark-mode header, .dark-mode #readerUI {
+    background: #1e293b / 80;
+    border-color: #334155;
+    color: white;
+}
+
+.dark-mode .book-card h4 {
+    color: #e2e8f0;
+}
+
+.dark-mode .bg-white {
+    background-color: #1e293b !important;
+}
+
+.dark-mode .reader-bar {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+/* Silliq o'tish effekti */
+body {
+    transition: background 0.4s ease, color 0.4s ease;
+}
+        /* Glassmorphism & Animations */
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .card-shadow { box-shadow: 0 20px 40px -15px rgba(0,0,0,0.07); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card-shadow:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.15); }
+        
+        /* Offcanvas Menu Customization */
+        .canvas-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); z-index: 2000; opacity: 0; pointer-events: none; transition: 0.5s; }
+        .canvas-menu { position: fixed; top: 0; right: -100%; width: 100%; max-width: 480px; height: 100%; background: white; z-index: 2100; transition: 0.6s cubic-bezier(0.85, 0, 0.15, 1); box-shadow: -25px 0 80px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .canvas-active .canvas-overlay { opacity: 1; pointer-events: auto; }
+        .canvas-active .canvas-menu { right: 0; }
+
+        /* Professional Category Pills */
+        .cat-pill { padding: 14px 32px; border-radius: 24px; font-weight: 800; transition: 0.4s; border: 2px solid #f1f5f9; background: white; white-space: nowrap; color: #64748b; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .cat-pill:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+        .cat-pill.active { background: #2563eb !important; color: white !important; border-color: #2563eb !important; box-shadow: 0 15px 30px -10px rgba(37, 99, 235, 0.5); transform: translateY(-2px); }
+
+        /* Audio Wave Visualizer */
+        .wave-container { display: flex; align-items: center; gap: 4px; height: 30px; }
+        .wave-bar { width: 4px; height: 10px; background: #2563eb; border-radius: 10px; animation: wave 1s ease-in-out infinite alternate; }
+        @keyframes wave { 0% { height: 6px; transform: scaleY(1); } 100% { height: 28px; transform: scaleY(1.2); } }
+
+        /* Skeleton Loading */
+        .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .viewer-box { transition: 0.7s cubic-bezier(0.85, 0, 0.15, 1); transform: translateY(100%); }
+        .viewer-box.open { transform: translateY(0); }
+    </style>
+</head>
+<body class="selection:bg-blue-200">
+
+    <div id="toast" class="fixed top-24 right-6 z-[6000] transform translate-x-[150%] transition-all duration-500">
+        <div class="bg-white border-l-8 border-blue-600 shadow-2xl rounded-3xl p-6 flex items-center gap-5 min-w-[350px]">
+            <div id="toastIcon" class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner"></div>
+            <div>
+                <p id="toastMsg" class="text-sm font-extrabold text-slate-800 leading-tight"></p>
+                <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-1">Hozirgina • Smart System</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="glass sticky top-0 z-[1000] px-8 py-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-14">
+            <a href="#" class="text-3xl font-black tracking-tighter flex items-center gap-3 group">
+    <div class="w-12 h-12 rounded-2xl overflow-hidden shadow-xl group-hover:rotate-12 transition-transform duration-500 border border-slate-100">
+        <img src="icon.png" alt="MyKitob" class="w-full h-full object-cover">
+    </div>
+    
+    <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">MyBook</span><span class="text-blue-600">.UZ</span>
+</a>
+                
+                <div class="hidden lg:flex items-center bg-slate-100/80 rounded-[22px] px-6 py-3.5 w-[450px] border-2 border-transparent focus-within:border-blue-400 focus-within:bg-white transition-all shadow-sm">
+                    <i class="fa fa-search text-slate-400 mr-4"></i>
+                    <input type="text" id="searchInput" onkeyup="searchEngine()" placeholder="Muallif, asar nomi yoki janr..." class="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700">
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="hidden sm:flex items-center gap-4 bg-white shadow-sm border border-slate-100 px-6 py-3 rounded-2xl">
+                    <div class="relative"><i class="fa fa-coins text-amber-500 text-2xl"></i><span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Hamyon</span>
+                        <span id="userBalance" class="text-base font-black text-slate-800">0</span>
+                    </div>
+                </div>
+                  <button id="darkModeToggle" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-105 transition-all">
+                <i id="themeIcon" class="fa fa-moon text-slate-600 dark:text-amber-400"></i>
+            </button>
+                <button onclick="toggleCanvas(true)" class="bg-slate-900 text-white px-8 py-4 rounded-[20px] font-black flex items-center gap-3 hover:bg-blue-700 transition-all shadow-2xl active:scale-95">
+                    <i class="fa fa-crown text-amber-400 text-xl"></i> 
+                    <span class="hidden md:inline">PREMIUM</span>
+                </button>
+            </div>
+        </div>
+   
+    </nav>
+
+    <div id="canvasBox">
+        <div class="canvas-overlay" onclick="toggleCanvas(false)"></div>
+        <div class="canvas-menu">
+            <div class="p-10 border-b flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h2 class="text-3xl font-black text-slate-900">Mening Profilim</h2>
+                    <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">ID: <span id="userId">664092</span></p>
+                </div>
+                <button onclick="toggleCanvas(false)" class="w-12 h-12 rounded-2xl bg-white text-slate-400 hover:text-red-500 shadow-sm transition-all border border-slate-100 flex items-center justify-center">
+                    <i class="fa fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 p-10 space-y-8 overflow-y-auto no-scrollbar">
+                <div class="bg-gradient-to-br from-indigo-700 via-blue-600 to-sky-500 p-8 rounded-[45px] text-white shadow-2xl relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-10">
+                            <div><p class="text-blue-100 text-[10px] font-black uppercase tracking-widest mb-1">Mavjud Balans</p><h3 id="canvasCoin" class="text-5xl font-black tracking-tighter">0 C</h3></div>
+                            <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center text-3xl"><i class="fa fa-gem"></i></div>
+                        </div>
+                        <div class="inline-flex items-center gap-3 bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase" id="premiumStatus">Standart Foydalanuvchi</div>
+                        <p id="premExp" class="text-[10px] mt-6 font-bold text-white/70 italic"></p>
+                    </div>
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+                </div>
+
+                <div class="grid gap-5">
+                    <div class="p-6 border-2 border-slate-50 rounded-[32px] bg-white flex items-center gap-6 hover:border-blue-200 transition-all cursor-pointer group">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all"><i class="fa fa-microphone"></i></div>
+                        <div><h4 class="font-black text-slate-800">O'zbekcha AI Ovoz</h4><p class="text-xs font-bold text-slate-400 mt-1">Kitoblarni tiniq o'zbek tilida tinglang.</p></div>
+                    </div>
+                    <div class="p-6 border-2 border-slate-50 rounded-[32px] bg-white flex items-center gap-6 hover:border-blue-200 transition-all cursor-pointer group">
+                        <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-2xl shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-all"><i class="fa fa-infinity"></i></div>
+                        <div><h4 class="font-black text-slate-800">Cheksiz Imkoniyat</h4><p class="text-xs font-bold text-slate-400 mt-1">Barcha pullik kitoblar sizga bepul.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-10 bg-slate-50 border-t">
+                <button id="buyPremiumBtn" onclick="buyPremium()" class="w-full bg-slate-900 text-white py-6 rounded-[28px] font-black text-xl hover:bg-blue-600 transition-all shadow-2xl active:scale-95 transform">
+                    PREMIUM OLISH — 500 C
+                </button>
+                <p class="text-center text-[10px] text-slate-400 mt-5 font-black uppercase tracking-[4px]">30 kun davomida amal qiladi</p>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-8 py-16">
+        <section class="mb-20 overflow-hidden">
+            <div class="flex items-center gap-6 mb-10">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[5px] whitespace-nowrap">Janrlar bo'yicha</h3>
+                <div class="h-[2px] bg-slate-100 flex-1"></div>
+            </div>
+            <div id="categoryMenu" class="flex items-center gap-5 overflow-x-auto no-scrollbar py-6">
+                <button onclick="filterBy('all')" id="btn-all" class="cat-pill active"><i class="fa fa-border-all"></i> Hammasi</button>
+                <button onclick="filterBy('Dasturlash')" id="btn-Dasturlash" class="cat-pill"><i class="fa fa-code"></i> Dasturlash</button>
+                <button onclick="filterBy('Biznes')" id="btn-Biznes" class="cat-pill"><i class="fa fa-chart-line"></i> Biznes</button>
+                <button onclick="filterBy('Psixologiya')" id="btn-Psixologiya" class="cat-pill"><i class="fa fa-brain"></i> Psixologiya</button>
+                <button onclick="filterBy('Badiiy')" id="btn-Badiiy" class="cat-pill"><i class="fa fa-pen-fancy"></i> Badiiy</button>
+                <button onclick="filterBy('Tarixiy')" id="btn-Tarixiy" class="cat-pill"><i class="fa fa-landmark"></i> Tarixiy</button>
+            </div>
+        </section>
+
+        <section class="min-h-screen">
+            <div class="flex justify-between items-end mb-14">
+                <div>
+                    <h2 class="text-5xl font-black text-slate-900 tracking-tight">Kutubxona</h2>
+                    <p class="text-slate-400 font-bold mt-3">Siz uchun saralangan <span id="count" class="text-blue-600">0</span> ta eng yaxshi asarlar</p>
+                </div>
+                <div class="flex gap-4">
+                    <button class="w-14 h-14 rounded-2xl bg-white border-2 border-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="fa fa-th-large"></i></button>
+                    <button class="w-14 h-14 rounded-2xl bg-white border-2 border-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"><i class="fa fa-list"></i></button>
+                </div>
+            </div>
+            
+            <div id="mainGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-10">
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+                <div class="skeleton h-[350px] rounded-[35px]"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="viewer" class="fixed inset-0 z-[5000] bg-white hidden viewer-box overflow-hidden">
+        <div class="h-28 glass flex items-center justify-between px-12 relative z-20">
+            <div class="flex items-center gap-8">
+                <div class="relative group">
+                    <img id="vThumb" class="w-14 h-20 object-cover rounded-xl shadow-2xl border-2 border-white group-hover:scale-105 transition-transform">
+                    <div id="waveUI" class="absolute -bottom-2 -right-2 bg-blue-600 p-2 rounded-xl hidden shadow-lg shadow-blue-300">
+                        <div class="wave-container">
+                            <div class="wave-bar" style="animation-delay: 0.1s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.3s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.2s"></div>
+                            <div class="wave-bar" style="animation-delay: 0.4s"></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 id="vTitle" class="font-black text-slate-900 text-xl leading-tight"></h4>
+                    <p class="text-xs font-black text-blue-600 uppercase tracking-[3px] mt-1.5 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> O'qish Jarayoni: 0%
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <button id="audioBtn" onclick="handleUzbekAudio()" class="group flex items-center gap-4 bg-slate-900 hover:bg-blue-600 text-white px-10 py-5 rounded-3xl font-black transition-all shadow-xl active:scale-95">
+                    <i class="fa fa-play text-amber-400" id="aIcon"></i>
+                    <span id="aText">AUDIO O'QISH (UZB)</span>
+                </button>
+                
+                <button onclick="openQuiz()" class="bg-emerald-500 text-white px-10 py-5 rounded-3xl font-black shadow-xl hover:bg-emerald-600 transition-all active:scale-95">MUTOLAANI YAKUNLASH</button>
+                
+                <div class="w-[2px] h-12 bg-slate-200 mx-4"></div>
+                
+                <button onclick="closeViewer()" class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center border border-slate-200">
+                    <i class="fa fa-times text-3xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="h-[calc(100vh-112px)] bg-[#f1f5f9] relative">
+            <iframe id="vFrame" class="w-full h-full border-none shadow-inner" src=""></iframe>
+            <div id="audioLabel" class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-10 py-5 rounded-[30px] backdrop-blur-2xl hidden flex items-center gap-5 border border-white/10 shadow-2xl animate-bounce">
+                <i class="fa fa-microphone-alt text-blue-400 text-xl"></i>
+                <span class="text-sm font-black tracking-wider uppercase">AI O'zbek tilida o'qimoqda...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="quizModal" class="fixed inset-0 z-[6000] bg-slate-900/95 backdrop-blur-2xl hidden flex items-center justify-center p-6">
+        <div class="bg-white max-w-2xl w-full rounded-[60px] p-20 text-center shadow-2xl relative overflow-hidden" id="quizContent">
+            <div class="absolute top-0 left-0 w-full h-3 bg-blue-600"></div>
+            <div class="w-28 h-28 bg-blue-50 text-blue-600 rounded-[40px] flex items-center justify-center text-5xl mx-auto mb-12 shadow-inner">🧠</div>
+            <h2 class="text-4xl font-black text-slate-800 mb-6">Bilim Sinovi</h2>
+            <p class="text-slate-400 font-bold mb-12 text-lg">Asarni diqqat bilan o'qidingizmi? Quyidagi savolga to'g'ri javob bering va bonus COINlarga ega bo'ling!</p>
+            <div id="quizBody" class="space-y-6">
+                <h3 id="qText" class="text-2xl font-black text-slate-700 mb-10 bg-slate-50 p-10 rounded-[40px] border-2 border-slate-100"></h3>
+                <div id="qOptions" class="grid gap-5"></div>
+            </div>
+        </div>
+    </div>
+<footer class="bg-[#0f172a] text-slate-400 pt-20 pb-10 px-6 md:px-12 mt-20 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[120px] rounded-full"></div>
+        
+        <div class="max-w-[1600px] mx-auto relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fa fa-book-open"></i>
+                        </div>
+                        <h2 class="text-white text-2xl font-black tracking-tighter">MyKitob<span class="text-blue-600">.PRO</span></h2>
+                    </div>
+                    <p class="leading-relaxed text-sm">
+                        O'zbekistondagi eng innovatsion elektron kutubxona. Kitob o'qing, audio eshiting va bilimlaringizni coinlarga almashtiring.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 border border-slate-700/50"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-all duration-300 border border-slate-700/50"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-800 hover:text-white transition-all duration-300 border border-slate-700/50"><i class="fab fa-facebook-f"></i></a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-white font-bold mb-6 text-lg">Sahifalar</h4>
+                    <ul class="space-y-4 text-sm font-medium">
+                        <li><a href="#" class="hover:text-blue-500 transition-colors flex items-center gap-2"><i class="fa fa-chevron-right text-[10px]"></i> Bosh sahifa</a></li>
+                        <li><a href="#" class="hover:text-blue-500 transition-colors flex items-center gap-2"><i class="fa fa-chevron-right text-[10px]"></i> Kutubxona</a></li>
+                        <li><a href="#" class="hover:text-blue-500 transition-colors flex items-center gap-2"><i class="fa fa-chevron-right text-[10px]"></i> Premium sotib olish</a></li>
+                        <li><a href="#" class="hover:text-blue-500 transition-colors flex items-center gap-2"><i class="fa fa-chevron-right text-[10px]"></i> Shaxsiy kabinet</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-white font-bold mb-6 text-lg">Statistika</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50">
+                            <p class="text-blue-500 font-black text-xl">10K+</p>
+                            <p class="text-[10px] uppercase font-bold tracking-wider">Kitobxonlar</p>
+                        </div>
+                        <div class="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50">
+                            <p class="text-blue-500 font-black text-xl">500+</p>
+                            <p class="text-[10px] uppercase font-bold tracking-wider">Kitoblar</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-white font-bold mb-6 text-lg">Yordam</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fa fa-headset text-blue-600 mt-1"></i>
+                            <div>
+                                <p class="text-white text-sm font-bold">24/7 Aloqa markazi</p>
+                                <p class="text-xs">support@mykitob.pro</p>
+                            </div>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-600/20 to-transparent border border-blue-600/30">
+                            <p class="text-xs text-blue-400 font-bold mb-2">SAVOLLAR BORMII?</p>
+                            <a href="#" class="text-white font-black text-sm hover:underline">Telegram botga yozing</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-[2px]">
+                <p>&copy; 2024 MYKITOB PRO. BARCHA HUQUQLAR HIMOYALANGAN.</p>
+                <div class="flex gap-8">
+                    <a href="#" class="hover:text-white transition-colors">Maxfiylik siyosati</a>
+                    <a href="#" class="hover:text-white transition-colors">Xizmat ko'rsatish shartlari</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <div id="rewardModal" class="fixed inset-0 z-[7000] bg-black/70 backdrop-blur-md hidden flex items-center justify-center">
+        <div class="bg-white rounded-[60px] p-16 max-w-md w-full text-center shadow-2xl border-4 border-blue-50 relative">
+            <div class="text-9xl mb-10 animate-pulse drop-shadow-2xl">🎁</div>
+            <h2 class="text-4xl font-black text-slate-800 mb-4">Xush Kelibsiz!</h2>
+            <p class="text-slate-500 font-bold mb-12 leading-relaxed text-lg">Sizga bugun uchun <span class="text-blue-600 font-black">100 COIN</span> sovg'a taqdim etildi. Kitoblar olamiga marhamat!</p>
+            <button onclick="claimReward()" class="w-full bg-blue-600 text-white py-6 rounded-[30px] font-black text-xl shadow-2xl hover:bg-blue-700 transition-all active:scale-95">SOVG'ANI QABUL QILISH</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { databaseURL: "https://classicteam-cbf34-default-rtdb.firebaseio.com/" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // SYSTEM STATE
+        let state = {
+            rawBooks: [],
+            coins: parseInt(localStorage.getItem('user_coins')) || 50,
+            isPremium: false,
+            audioLimit: parseInt(localStorage.getItem('audio_limit')) || 3,
+            lastAudioDay: localStorage.getItem('last_audio_day'),
+            activeBook: null,
+            isReading: false,
+            userId: Math.floor(100000 + Math.random() * 900000)
+        };
+
+        const synth = window.speechSynthesis;
+        let uzVoice = null;
+
+        // SYSTEM INITIALIZATION
+        function initSystem() {
+            checkPremiumStatus();
+            updateGlobalUI();
+            loadVoices();
+            document.getElementById('userId').innerText = state.userId;
+        }
+
+        function loadVoices() {
+            // Brauzer ovozlarini tekshirish
+            let voices = synth.getVoices();
+            // O'zbek tili uchun eng mos ovozlarni qidirish (Google yoki Microsoft uz-UZ)
+            uzVoice = voices.find(v => v.lang.includes('uz') || v.lang.includes('TR')); // TR o'zbekchaga yaqinroq talaffuz qiladi agar UZ yo'q bo'lsa
+            if (!uzVoice) uzVoice = voices.find(v => v.lang.includes('en')); 
+        }
+
+        // Brauzer ovozlari o'zgarganda qayta yuklash
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        function checkPremiumStatus() {
+            const premStr = localStorage.getItem('premium_expiry');
+            if(premStr) {
+                const expiry = new Date(premStr);
+                if(new Date() < expiry) {
+                    state.isPremium = true;
+                    document.getElementById('premExp').innerText = "Amal qilish muddati: " + expiry.toLocaleDateString();
+                } else {
+                    localStorage.removeItem('premium_expiry');
+                    state.isPremium = false;
+                }
+            }
+        }
+
+        function updateGlobalUI() {
+            document.getElementById('userBalance').innerText = state.coins.toLocaleString();
+            document.getElementById('canvasCoin').innerText = state.coins.toLocaleString() + " C";
+            
+            const premBadge = document.getElementById('premiumStatus');
+            if(state.isPremium) {
+                premBadge.innerHTML = '<i class="fa fa-crown text-amber-400 mr-2"></i> Premium Faol';
+                premBadge.classList.replace('bg-white/20', 'bg-amber-500/30');
+                document.getElementById('buyPremiumBtn').innerText = "PREMIUM FAOL";
+                document.getElementById('buyPremiumBtn').classList.replace('bg-slate-900', 'bg-emerald-500');
+            }
+
+            const today = new Date().toDateString();
+            if(state.lastAudioDay !== today) {
+                state.audioLimit = 3;
+                state.lastAudioDay = today;
+                localStorage.setItem('audio_limit', 3);
+                localStorage.setItem('last_audio_day', today);
+            }
+        }
+
+        window.showToast = (msg, icon = 'fa-info-circle') => {
+            const el = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastIcon').innerHTML = `<i class="fa ${icon}"></i>`;
+            el.classList.remove('translate-x-[150%]');
+            setTimeout(() => el.classList.add('translate-x-[150%]'), 4000);
+        };
+
+        window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
+
+        // BOOK ENGINE
+        window.renderBooks = (data = state.rawBooks) => {
+            const grid = document.getElementById('mainGrid');
+            document.getElementById('count').innerText = data.length;
+            
+            if(data.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
+                return;
+            }
+
+            grid.innerHTML = data.map(book => {
+                const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_'+book.id);
+                return `
+                    <div onclick="handleBookAccess('${book.id}')" class="group cursor-pointer">
+                        <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
+                            <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
+                                 onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
+                            ${book.isCoin && !isUnlocked ? `
+                                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                                    <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
+                                        <i class="fa fa-lock text-amber-500"></i> ${book.price} C
+                                    </div>
+                                </div>
+                                <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
+                            ` : ''}
+                        </div>
+                        <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
+                        <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat}
+                        </p>
+                    </div>`;
+            }).join('');
+        };
+
+        window.handleBookAccess = (id) => {
+            const book = state.rawBooks.find(x => x.id === id);
+            state.activeBook = book;
+            const key = 'u_' + id;
+
+            if(book.isCoin && !localStorage.getItem(key) && !state.isPremium) {
+                if(state.coins >= book.price) {
+                    if(confirm(`"${book.title}" asarini ${book.price} COIN evaziga sotib olasizmi?`)) {
+                        state.coins -= book.price;
+                        localStorage.setItem(key, 'true');
+                        localStorage.setItem('user_coins', state.coins);
+                        updateGlobalUI();
+                        openReader(book);
+                    }
+                } else showToast("Mablag' yetarli emas!", "fa-lock");
+            } else openReader(book);
+        };
+
+        function openReader(book) {
+            document.getElementById('vFrame').src = book.pdf;
+            document.getElementById('vThumb').src = book.img;
+            document.getElementById('vTitle').innerText = book.title;
+            const v = document.getElementById('viewer');
+            v.classList.remove('hidden');
+            setTimeout(() => v.classList.add('open'), 100);
+            document.body.style.overflow = 'hidden';
+            showToast("Mutolaa boshlandi. Maroqli dam oling!", "fa-book-open");
+        }
+
+        window.closeViewer = () => {
+            synth.cancel();
+            state.isReading = false;
+            updateAudioUI(false);
+            const v = document.getElementById('viewer');
+            v.classList.remove('open');
+            setTimeout(() => { v.classList.add('hidden'); document.body.style.overflow = 'auto'; }, 600);
+        };
+const themeBtn = document.getElementById('darkModeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const body = document.body;
+
+// LocalStoragedan tekshirish
+if (localStorage.getItem('theme') === 'dark') {
+    enableDarkMode();
+}
+
+themeBtn.addEventListener('click', () => {
+    if (body.classList.contains('dark-mode')) {
+        disableDarkMode();
+    } else {
+        enableDarkMode();
+    }
+});
+
+function enableDarkMode() {
+    body.classList.add('dark-mode');
+    themeIcon.classList.replace('fa-moon', 'fa-sun');
+    localStorage.setItem('theme', 'dark');
+}
+
+function disableDarkMode() {
+    body.classList.remove('dark-mode');
+    themeIcon.classList.replace('fa-sun', 'fa-moon');
+    localStorage.setItem('theme', 'light');
+}
+        // ---------------------------------------------------------
+        // IMPROVED UZBEK AUDIO SYSTEM
+        // ---------------------------------------------------------
+        window.handleUzbekAudio = () => {
+            if(state.isReading) {
+                synth.cancel();
+                state.isReading = false;
+                updateAudioUI(false);
+                return;
+            }
+
+            if(!state.isPremium && state.audioLimit <= 0) {
+                showToast("Kunlik audio limit tugadi (3/3)", "fa-clock");
+                return;
+            }
+
+            if(!state.isPremium) {
+                state.audioLimit--;
+                localStorage.setItem('audio_limit', state.audioLimit);
+                showToast(`Audio o'qish faollashdi. Qolgan limit: ${state.audioLimit}`, "fa-headphones");
+            }
+
+            // O'zbekcha matn tayyorlash
+            const textToRead = `${state.activeBook.title}. Ushbu kitob ${state.activeBook.cat} janriga mansub. Hozirda siz MyKitob tizimi orqali sun'iy intellekt yordamida audio mutolaa qilmoqdasiz. Diqqat bilan tinglang.`;
+            
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'uz-UZ'; // O'zbek tili kodi
+            utterance.rate = 0.85; // Bir oz sekinroq va tiniqroq talaffuz uchun
+            utterance.pitch = 1.1;
+
+            if(uzVoice) {
+                utterance.voice = uzVoice;
+            }
+
+            utterance.onstart = () => {
+                state.isReading = true;
+                updateAudioUI(true);
+            };
+            
+            utterance.onend = () => {
+                state.isReading = false;
+                updateAudioUI(false);
+                showToast("Audio mutolaa yakunlandi.", "fa-check-circle");
+            };
+
+            utterance.onerror = () => {
+                state.isReading = false;
+                updateAudioUI(false);
+                showToast("Xatolik: Brauzeringiz o'zbekcha ovozni qo'llab-quvvatlamaydi.", "fa-exclamation-triangle");
+            };
+
+            synth.speak(utterance);
+        };
+
+        function updateAudioUI(active) {
+            const btn = document.getElementById('audioBtn');
+            const icon = document.getElementById('aIcon');
+            const text = document.getElementById('aText');
+            const label = document.getElementById('audioLabel');
+            const wave = document.getElementById('waveUI');
+
+            if(active) {
+                btn.classList.replace('bg-slate-900', 'bg-red-500');
+                icon.className = 'fa fa-pause text-white';
+                text.innerText = 'AUDIO TO\'XTATISH';
+                label.classList.remove('hidden');
+                wave.classList.remove('hidden');
+            } else {
+                btn.classList.replace('bg-red-500', 'bg-slate-900');
+                icon.className = 'fa fa-play text-amber-400';
+                text.innerText = 'AUDIO O\'QISH (UZB)';
+                label.classList.add('hidden');
+                wave.classList.add('hidden');
+            }
+        }
+
+        // QUIZ & REWARD
+        window.openQuiz = () => {
+            if(!state.activeBook.q) {
+                showToast("Ajoyib! Kitob yakunlandi. +20 C", "fa-check");
+                state.coins += 20;
+                localStorage.setItem('user_coins', state.coins);
+                updateGlobalUI();
+                closeViewer();
+                return;
+            }
+            document.getElementById('quizModal').classList.remove('hidden');
+            document.getElementById('qText').innerText = state.activeBook.q;
+            const options = [state.activeBook.ans, state.activeBook.wrong].sort(() => Math.random() - 0.5);
+            document.getElementById('qOptions').innerHTML = options.map(opt => `
+                <button onclick="checkQuiz('${opt}')" class="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl font-bold text-lg hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-95 text-slate-700">
+                    ${opt}
+                </button>
+            `).join('');
+        };
+
+        window.checkQuiz = (ans) => {
+            if(ans === state.activeBook.ans) {
+                showToast("To'g'ri javob! +50 COIN", "fa-gift");
+                state.coins += 50;
+            } else {
+                showToast("Afsuski, javob noto'g'ri.", "fa-times-circle");
+            }
+            localStorage.setItem('user_coins', state.coins);
+            updateGlobalUI();
+            document.getElementById('quizModal').classList.add('hidden');
+            closeViewer();
+        };
+
+        window.buyPremium = () => {
+            if(state.isPremium) return;
+            if(state.coins >= 500) {
+                state.coins -= 500;
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + 30);
+                localStorage.setItem('premium_expiry', expiry.toISOString());
+                localStorage.setItem('user_coins', state.coins);
+                state.isPremium = true;
+                updateGlobalUI();
+                renderBooks();
+                toggleCanvas(false);
+                showToast("Tabriklaymiz! Premium 30 kunga faollashtirildi.", "fa-crown");
+            } else showToast("Mablag' yetarli emas!", "fa-lock");
+        };
+
+        window.claimReward = () => {
+            state.coins += 100;
+            localStorage.setItem('user_coins', state.coins);
+            localStorage.setItem('last_login', new Date().toDateString());
+            document.getElementById('rewardModal').classList.add('hidden');
+            updateGlobalUI();
+            showToast("100 COIN hisobingizga qo'shildi!", "fa-coins");
+        };
+
+        // SEARCH & FILTER
+        window.filterBy = (cat) => {
+            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+            document.getElementById(`btn-${cat}`).classList.add('active');
+            const res = cat === 'all' ? state.rawBooks : state.rawBooks.filter(b => b.cat === cat);
+            renderBooks(res);
+        };
+
+        window.searchEngine = () => {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const res = state.rawBooks.filter(b => 
+                b.title.toLowerCase().includes(q) || 
+                b.cat.toLowerCase().includes(q)
+            );
+            renderBooks(res);
+        };
+
+        // FIREBASE SYNC
+        onValue(ref(db, 'kitoblar'), (snap) => {
+            state.rawBooks = [];
+            snap.forEach(c => state.rawBooks.push({ id: c.key, ...c.val() }));
+            renderBooks();
+            initSystem();
+        });
+
+        window.onload = () => {
+            if(localStorage.getItem('last_login') !== new Date().toDateString()) {
+                setTimeout(() => document.getElementById('rewardModal').classList.remove('hidden'), 2000);
+            }
+        };
+    </script>
+</body>
+</html>

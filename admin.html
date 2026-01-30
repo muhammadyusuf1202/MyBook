@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - MyKitob Boshqaruvi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; }
+        .admin-glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        .input-dark { background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 12px 16px; outline: none; transition: 0.3s; }
+        .input-dark:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-[1600px] mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+            <div>
+                <h1 class="text-4xl font-black tracking-tight text-white flex items-center gap-4">
+                    <span class="p-3 bg-blue-600 rounded-2xl"><i class="fa fa-shield-halved"></i></span>
+                    Boshqaruv Markazi
+                </h1>
+                <p class="text-slate-400 mt-2 font-medium">Platformadagi barcha ma'lumotlarni real-vaqtda boshqaring</p>
+            </div>
+            <div class="flex gap-4">
+                <div class="admin-glass px-6 py-4 rounded-[24px] flex items-center gap-4">
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-500 font-black uppercase">Jami Kitoblar</span>
+                        <p id="statCount" class="text-2xl font-black text-blue-500 leading-none">0</p>
+                    </div>
+                    <i class="fa fa-book-open text-3xl text-slate-700"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            
+            <div class="lg:col-span-4">
+                <div class="admin-glass p-8 rounded-[40px] border-t-4 border-t-blue-600">
+                    <h2 class="text-xl font-black mb-8 flex items-center gap-3">
+                        <i class="fa fa-plus-circle text-blue-500"></i> Yangi Material Qo'shish
+                    </h2>
+                    
+                    <div class="flex flex-col gap-5">
+                        <div class="group">
+                            <label class="text-[10px] font-black uppercase text-slate-500 ml-2 mb-2 block">Kitob Nomi</label>
+                            <input type="text" id="t" placeholder="Masalan: O'tkan Kunlar" class="input-dark w-full text-white">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-500 ml-2 mb-2 block">Muallif</label>
+                                <input type="text" id="a" placeholder="A.Qodiriy" class="input-dark w-full text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black uppercase text-slate-500 ml-2 mb-2 block">Kategoriya</label>
+                                <select id="c" class="input-dark w-full text-sm appearance-none">
+                                    <option>Dasturlash</option>
+                                    <option>Psixologiya</option>
+                                    <option>Badiiy</option>
+                                    <option>Tarixiy</option>
+                                    <option>Biznes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <label class="text-[10px] font-black uppercase text-slate-500 ml-2 mb-2 block">Rasm va PDF URL</label>
+                            <input type="text" id="img" placeholder="Poster Link..." class="input-dark w-full text-xs mb-3">
+                            <input type="text" id="pdf" placeholder="Fayl Link..." class="input-dark w-full text-xs">
+                        </div>
+
+                        <div class="bg-blue-600/5 p-6 rounded-3xl border border-blue-500/20 space-y-4">
+                            <span class="text-[10px] font-black uppercase text-blue-500 block">Bilimni Sinash (Test)</span>
+                            <input type="text" id="q" placeholder="Savol matni..." class="input-dark w-full text-xs">
+                            <div class="flex gap-2">
+                                <input type="text" id="ans" placeholder="To'g'ri javob" class="input-dark w-1/2 text-xs border-green-500/30">
+                                <input type="text" id="wrong" placeholder="Noto'g'ri javob" class="input-dark w-1/2 text-xs border-red-500/30">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between px-2 py-4">
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" id="isTop" class="w-5 h-5 accent-blue-600">
+                                <span class="text-sm font-bold text-slate-300 group-hover:text-white transition">Top-5 ro'yxat</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="isC" class="w-5 h-5 accent-amber-500">
+                                <input type="number" id="p" placeholder="Price" class="w-16 bg-amber-500/10 border border-amber-500/30 rounded-lg text-center p-1 text-xs text-amber-500 outline-none">
+                            </div>
+                        </div>
+
+                        <button onclick="saveKitob()" class="bg-blue-600 hover:bg-blue-500 py-5 rounded-[20px] font-black shadow-xl shadow-blue-600/20 transition-all active:scale-95">
+                            PLATFORMAGA CHIQARISH
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 flex flex-col gap-10">
+                
+                <div class="admin-glass rounded-[40px] overflow-hidden">
+                    <div class="p-8 border-b border-white/5 flex justify-between items-center">
+                        <h2 class="text-xl font-black italic">Barcha Resurslar</h2>
+                        <div class="flex gap-2">
+                            <button class="bg-slate-800 p-2 rounded-lg text-xs hover:bg-slate-700 transition">CSV Eksport</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-800/50 text-[10px] font-black uppercase text-slate-500">
+                                <tr>
+                                    <th class="px-8 py-5">Material</th>
+                                    <th class="px-8 py-5">Kategoriya</th>
+                                    <th class="px-8 py-5">Status</th>
+                                    <th class="px-8 py-5 text-right">Amal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookList" class="divide-y divide-white/5">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-[500px]">
+                    <div class="md:col-span-4 admin-glass rounded-[40px] p-6 flex flex-col">
+                        <h3 class="font-black text-sm mb-6 flex items-center gap-2">
+                            <i class="fa fa-users text-blue-500"></i> Foydalanuvchilar
+                        </h3>
+                        <div id="userList" class="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
+                            </div>
+                    </div>
+                    <div class="md:col-span-8 admin-glass rounded-[40px] p-6 flex flex-col">
+                        <div id="chatHeader" class="pb-4 border-b border-white/5 mb-4 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center font-bold text-xs">U</div>
+                            <div>
+                                <h4 id="activeUserName" class="text-sm font-black">User Tanlang</h4>
+                                <span class="text-[10px] text-green-500 font-bold uppercase">Online</span>
+                            </div>
+                        </div>
+                        <div id="chatMessages" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 mb-4">
+                            </div>
+                        <div class="flex gap-3 bg-slate-900 p-2 rounded-2xl border border-white/5">
+                            <input type="text" id="adminMsg" placeholder="Javob yozing..." class="flex-1 bg-transparent px-4 py-2 outline-none text-sm">
+                            <button onclick="sendReply()" class="bg-blue-600 w-12 h-12 rounded-xl hover:bg-blue-500 transition">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const db = getDatabase(initializeApp({ databaseURL: "https://classicteam-cbf34-default-rtdb.firebaseio.com/" }));
+        let currentEditKey = null;
+        let selectedUser = null;
+
+        // LOAD DATA
+        onValue(ref(db, 'kitoblar'), (snap) => {
+            const list = document.getElementById('bookList');
+            const stat = document.getElementById('statCount');
+            list.innerHTML = "";
+            let count = 0;
+
+            snap.forEach(child => {
+                count++;
+                const b = child.val();
+                const k = child.key;
+                list.innerHTML += `
+                    <tr class="hover:bg-white/[0.02] transition group">
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-4">
+                                <img src="${b.img}" class="w-10 h-14 object-cover rounded-lg shadow-2xl">
+                                <div>
+                                    <div class="text-sm font-bold text-white group-hover:text-blue-400 transition">${b.title}</div>
+                                    <div class="text-[10px] text-slate-500 font-medium">${b.author}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5"><span class="text-xs font-bold text-slate-400">${b.cat}</span></td>
+                        <td class="px-8 py-5">
+                            ${b.isTop5 ? '<span class="px-2 py-1 bg-blue-600/10 text-blue-500 text-[10px] font-black rounded-md">TOP-5</span>' : ''}
+                            ${b.isCoin ? '<span class="px-2 py-1 bg-amber-600/10 text-amber-500 text-[10px] font-black rounded-md ml-1">PAID</span>' : ''}
+                        </td>
+                        <td class="px-8 py-5 text-right">
+                            <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editKitob('${k}')" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-blue-600"><i class="fa fa-edit text-xs"></i></button>
+                                <button onclick="deleteKitob('${k}')" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-red-600"><i class="fa fa-trash text-xs"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            stat.innerText = count;
+        });
+
+        window.saveKitob = function() {
+            const data = {
+                title: document.getElementById('t').value,
+                author: document.getElementById('a').value,
+                cat: document.getElementById('c').value,
+                img: document.getElementById('img').value,
+                pdf: document.getElementById('pdf').value,
+                q: document.getElementById('q').value,
+                ans: document.getElementById('ans').value,
+                wrong: document.getElementById('wrong').value,
+                isTop5: document.getElementById('isTop').checked,
+                isCoin: document.getElementById('isC').checked,
+                price: document.getElementById('p').value || 0
+            };
+
+            if (currentEditKey) {
+                update(ref(db, 'kitoblar/' + currentEditKey), data).then(resetForm);
+            } else {
+                push(ref(db, 'kitoblar'), data).then(resetForm);
+            }
+        };
+
+        window.deleteKitob = (k) => confirm("Aniq o'chirmoqchimisiz?") && remove(ref(db, 'kitoblar/'+k));
+
+        window.editKitob = (k) => {
+            onValue(ref(db, 'kitoblar/'+k), (s) => {
+                const b = s.val();
+                currentEditKey = k;
+                document.getElementById('t').value = b.title;
+                document.getElementById('a').value = b.author;
+                document.getElementById('img').value = b.img;
+                document.getElementById('pdf').value = b.pdf;
+                document.getElementById('q').value = b.q;
+                document.getElementById('ans').value = b.ans;
+                document.getElementById('wrong').value = b.wrong;
+                document.getElementById('isTop').checked = b.isTop5;
+                document.getElementById('isC').checked = b.isCoin;
+                document.getElementById('p').value = b.price;
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }, {onlyOnce: true});
+        };
+
+        function resetForm() {
+            currentEditKey = null;
+            document.querySelectorAll('input, select').forEach(i => {
+                if(i.type === 'checkbox') i.checked = false;
+                else i.value = "";
+            });
+            alert("Muvaffaqiyatli saqlandi!");
+        }
+
+        // CHAT ENGINE
+        onValue(ref(db, 'chats'), (snap) => {
+            const uList = document.getElementById('userList');
+            uList.innerHTML = "";
+            snap.forEach(child => {
+                const userName = child.key;
+                uList.innerHTML += `
+                    <div onclick="openChat('${userName}')" class="p-4 bg-white/5 rounded-2xl hover:bg-blue-600 transition cursor-pointer flex items-center justify-between">
+                        <span class="text-xs font-bold">${userName}</span>
+                        <i class="fa fa-chevron-right text-[10px]"></i>
+                    </div>
+                `;
+            });
+        });
+
+        window.openChat = (user) => {
+            selectedUser = user;
+            document.getElementById('activeUserName').innerText = user;
+            onValue(ref(db, 'chats/'+user), (s) => {
+                const box = document.getElementById('chatMessages');
+                box.innerHTML = "";
+                s.forEach(m => {
+                    const msg = m.val();
+                    const isAdmin = msg.sender === 'admin';
+                    box.innerHTML += `
+                        <div class="flex ${isAdmin ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[80%] p-3 rounded-2xl text-xs ${isAdmin ? 'bg-blue-600 rounded-tr-none' : 'bg-white/10 rounded-tl-none'}">
+                                ${msg.text}
+                            </div>
+                        </div>
+                    `;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        };
+
+        window.sendReply = () => {
+            const inp = document.getElementById('adminMsg');
+            if(!selectedUser || !inp.value) return;
+            push(ref(db, 'chats/'+selectedUser), {
+                text: inp.value,
+                sender: 'admin',
+                time: Date.now()
+            });
+            inp.value = "";
+        };
+    </script>
+</body>
+</html>
