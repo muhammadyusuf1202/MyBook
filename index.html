@@ -366,448 +366,492 @@ body {
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, get, update, push, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = { databaseURL: "https://classicteam-cbf34-default-rtdb.firebaseio.com/" };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let isQRReady = false;
+    // ==========================================
+    // 1. GLOBAL KONFIGURATSIYA VA FIREBASE
+    // ==========================================
+    const firebaseConfig = { 
+        databaseURL: "https://mybook-67510-default-rtdb.firebaseio.com/",
+        projectId: "mybook-67510"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const synth = window.speechSynthesis;
 
-window.toggleQRModal = (val) => {
-    const modal = document.getElementById('qrModal');
-    const qrImg = document.getElementById('qrImageElement');
-    
-    if(val) {
-        // Fayl manzilingizni shu yerga yozing
-        const apkUrl = window.location.origin + "/MyBook.apk";
+    // ==========================================
+    // 2. KENGAYTIRILGAN SYSTEM STATE (HOLAT)
+    // ==========================================
+    let state = {
+        rawBooks: [],
+        filteredBooks: [],
+        leaderboard: [],
+        reviews: {},
+        bookmarks: JSON.parse(localStorage.getItem('my_bookmarks')) || [],
+        coins: parseInt(localStorage.getItem('user_coins')) || 100,
+        isPremium: false,
+        audioLimit: parseInt(localStorage.getItem('audio_limit')) || 3,
+        lastAudioDay: localStorage.getItem('last_audio_day'),
+        activeBook: null,
+        isReading: false,
+        userId: localStorage.getItem('mybook_user_id') || "MB_USER_" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        username: localStorage.getItem('mybook_username') || "Kitobxon",
+        stats: JSON.parse(localStorage.getItem('user_stats')) || { 
+            totalRead: 0, 
+            timeSpent: 0, 
+            xp: 0, 
+            level: 1,
+            booksUnlocked: 0,
+            streak: 0
+        },
+        achievements: JSON.parse(localStorage.getItem('my_achievements')) || [],
+        uzVoice: null,
+        visualizerActive: false,
+        lastSync: Date.now()
+    };
+
+    // ==========================================
+    // 3. TIZIMNI ISHGA TUSHIRISH (INITIALIZER)
+    // ==========================================
+    const initSystem = async () => {
+        console.log("%c >>> MYBOOK OS V4.0 LOADED <<< ", "color: white; background: #3b82f6; padding: 5px; border-radius: 5px;");
         
-        // Tashqi sayt (API) orqali QR yaratish
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(apkUrl)}`;
+        localStorage.setItem('mybook_user_id', state.userId);
         
-        modal.classList.remove('hidden');
-    } else {
-        modal.classList.add('hidden');
-    }
-};
-        // SYSTEM STATE
-        let state = {
-            rawBooks: [],
-            coins: parseInt(localStorage.getItem('user_coins')) || 50,
-            isPremium: false,
-            audioLimit: parseInt(localStorage.getItem('audio_limit')) || 3,
-            lastAudioDay: localStorage.getItem('last_audio_day'),
-            activeBook: null,
-            isReading: false,
-            userId: Math.floor(100000 + Math.random() * 900000)
-        };
+        await bootstrapUser();
+        checkPremiumStatus();
+        updateGlobalUI();
+        loadVoices();
+        setupVisualizer();
+        setupRealtimeListeners();
+        checkDailyStreak();
+        
+        if(document.getElementById('userId')) document.getElementById('userId').innerText = state.userId;
+    };
 
-        const synth = window.speechSynthesis;
-        let uzVoice = null;
-
-        // SYSTEM INITIALIZATION
-        function initSystem() {
-            checkPremiumStatus();
+    async function bootstrapUser() {
+        const userRef = ref(db, `users/${state.userId}`);
+        const snap = await get(userRef);
+        
+        if (!snap.exists()) {
+            await set(userRef, {
+                userId: state.userId,
+                username: state.username,
+                coins: state.coins,
+                stats: state.stats,
+                isPremium: state.isPremium,
+                joinedAt: serverTimestamp(),
+                lastActive: serverTimestamp()
+            });
+        } else {
+            const data = snap.val();
+            state.coins = data.coins || state.coins;
+            state.stats = data.stats || state.stats;
+            state.username = data.username || state.username;
+            state.isPremium = data.isPremium || state.isPremium;
             updateGlobalUI();
-            loadVoices();
-            document.getElementById('userId').innerText = state.userId;
         }
-
-        function loadVoices() {
-            // Brauzer ovozlarini tekshirish
-            let voices = synth.getVoices();
-            // O'zbek tili uchun eng mos ovozlarni qidirish (Google yoki Microsoft uz-UZ)
-            uzVoice = voices.find(v => v.lang.includes('uz') || v.lang.includes('TR')); // TR o'zbekchaga yaqinroq talaffuz qiladi agar UZ yo'q bo'lsa
-            if (!uzVoice) uzVoice = voices.find(v => v.lang.includes('en')); 
-        }
-
-        // Brauzer ovozlari o'zgarganda qayta yuklash
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-
-        function checkPremiumStatus() {
-            const premStr = localStorage.getItem('premium_expiry');
-            if(premStr) {
-                const expiry = new Date(premStr);
-                if(new Date() < expiry) {
-                    state.isPremium = true;
-                    document.getElementById('premExp').innerText = "Amal qilish muddati: " + expiry.toLocaleDateString();
-                } else {
-                    localStorage.removeItem('premium_expiry');
-                    state.isPremium = false;
-                }
-            }
-        }
-
-        function updateGlobalUI() {
-            document.getElementById('userBalance').innerText = state.coins.toLocaleString();
-            document.getElementById('canvasCoin').innerText = state.coins.toLocaleString() + " C";
-            
-            const premBadge = document.getElementById('premiumStatus');
-            if(state.isPremium) {
-                premBadge.innerHTML = '<i class="fa fa-crown text-amber-400 mr-2"></i> Premium Faol';
-                premBadge.classList.replace('bg-white/20', 'bg-amber-500/30');
-                document.getElementById('buyPremiumBtn').innerText = "PREMIUM FAOL";
-                document.getElementById('buyPremiumBtn').classList.replace('bg-slate-900', 'bg-emerald-500');
-            }
-
-            const today = new Date().toDateString();
-            if(state.lastAudioDay !== today) {
-                state.audioLimit = 3;
-                state.lastAudioDay = today;
-                localStorage.setItem('audio_limit', 3);
-                localStorage.setItem('last_audio_day', today);
-            }
-        }
-
-        window.showToast = (msg, icon = 'fa-info-circle') => {
-            const el = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            document.getElementById('toastIcon').innerHTML = `<i class="fa ${icon}"></i>`;
-            el.classList.remove('translate-x-[150%]');
-            setTimeout(() => el.classList.add('translate-x-[150%]'), 4000);
-        };
-
-        window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
-        // ... (Sizning kodingiz davomi)
-window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
-
-// --- MENING AUDIO KODLARIMNI SHU YERDAN BOSHLAB QO'SHING ---
-
-window.handleUzbekAudio = () => {
-    // Agar hozir gapirayotgan bo'lsa - to'xtatish
-    if (synth.speaking) {
-        synth.cancel();
-        state.isReading = false;
-        updateAudioUI(false);
-        return;
     }
 
-    // Premium va limit tekshiruvi
-    if (!state.isPremium && state.audioLimit <= 0) {
-        showToast("Kunlik audio limit tugadi (3/3)", "fa-clock");
-        return;
+    // ==========================================
+    // 4. OVOZLI BOSHQARUV (ADVANCED AUDIO)
+    // ==========================================
+    function loadVoices() {
+        const voices = synth.getVoices();
+        // O'zbek tili uchun eng yaxshi alternativlar zanjiri
+        state.uzVoice = voices.find(v => v.lang.includes('uz')) || 
+                        voices.find(v => v.lang.includes('tr')) || 
+                        voices.find(v => v.lang.includes('az')) || 
+                        voices.find(v => v.lang.includes('ru')) || 
+                        voices[0];
     }
+    synth.onvoiceschanged = loadVoices;
 
-    if (!state.activeBook) {
-        showToast("Iltimos, avval kitobni tanlang", "fa-book");
-        return;
-    }
-
-    // Limitdan ayirish
-    if (!state.isPremium) {
-        state.audioLimit--;
-        localStorage.setItem('audio_limit', state.audioLimit);
-        showToast(`Qolgan limit: ${state.audioLimit}`, "fa-headphones");
-    }
-
-    // O'zbekcha matn (pauzalar bilan)
-    const textToRead = `${state.activeBook.title}. ... Bu kitob ${state.activeBook.cat} janriga mansub. ... Marhamat, tinglang.`;
-    
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    
-    // SOZLAMALAR - Tushunarli bo'lishi uchun
-    utterance.lang = 'uz-UZ';
-    utterance.rate = 0.7; // Sekin va tushunarli
-    utterance.pitch = 1.0;
-    utterance.voice = uzVoice; // Sizning loadVoices() funksiyangiz topgan ovoz
-
-    utterance.onstart = () => {
-        state.isReading = true;
-        updateAudioUI(true);
-    };
-
-    utterance.onend = () => {
-        state.isReading = false;
-        updateAudioUI(false);
-        showToast("Mutolaa yakunlandi", "fa-check");
-    };
-
-    synth.speak(utterance);
-};
-
-// UI ni yangilash funksiyasi
-function updateAudioUI(active) {
-    const btn = document.getElementById('audioBtn');
-    const icon = document.getElementById('aIcon');
-    if(!btn || !icon) return;
-
-    if (active) {
-        btn.classList.add('bg-red-500', 'animate-pulse');
-        icon.className = 'fa fa-pause text-white';
-    } else {
-        btn.classList.remove('bg-red-500', 'animate-pulse');
-        btn.classList.add('bg-slate-900');
-        icon.className = 'fa fa-play text-amber-400';
-    }
-}
-        // BOOK ENGINE
-        window.renderBooks = (data = state.rawBooks) => {
-            const grid = document.getElementById('mainGrid');
-            document.getElementById('count').innerText = data.length;
-            
-            if(data.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
-                return;
-            }
-
-            grid.innerHTML = data.map(book => {
-                const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_'+book.id);
-                return `
-                    <div onclick="handleBookAccess('${book.id}')" class="group cursor-pointer">
-                        <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
-                            <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
-                                 onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
-                            ${book.isCoin && !isUnlocked ? `
-                                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                    <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
-                                        <i class="fa fa-lock text-amber-500"></i> ${book.price} C
-                                    </div>
-                                </div>
-                                <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
-                            ` : ''}
-                        </div>
-                        <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
-                        <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat}
-                        </p>
-                    </div>`;
-            }).join('');
-        };
-
-        window.handleBookAccess = (id) => {
-            const book = state.rawBooks.find(x => x.id === id);
-            state.activeBook = book;
-            const key = 'u_' + id;
-
-            if(book.isCoin && !localStorage.getItem(key) && !state.isPremium) {
-                if(state.coins >= book.price) {
-                    if(confirm(`"${book.title}" asarini ${book.price} COIN evaziga sotib olasizmi?`)) {
-                        state.coins -= book.price;
-                        localStorage.setItem(key, 'true');
-                        localStorage.setItem('user_coins', state.coins);
-                        updateGlobalUI();
-                        openReader(book);
-                    }
-                } else showToast("Mablag' yetarli emas!", "fa-lock");
-            } else openReader(book);
-        };
-
-        function openReader(book) {
-            document.getElementById('vFrame').src = book.pdf;
-            document.getElementById('vThumb').src = book.img;
-            document.getElementById('vTitle').innerText = book.title;
-            const v = document.getElementById('viewer');
-            v.classList.remove('hidden');
-            setTimeout(() => v.classList.add('open'), 100);
-            document.body.style.overflow = 'hidden';
-            showToast("Mutolaa boshlandi. Maroqli dam oling!", "fa-book-open");
-        }
-
-        window.closeViewer = () => {
+    window.handleUzbekAudio = () => {
+        if(state.isReading) {
             synth.cancel();
-            state.isReading = false;
-            updateAudioUI(false);
-            const v = document.getElementById('viewer');
-            v.classList.remove('open');
-            setTimeout(() => { v.classList.add('hidden'); document.body.style.overflow = 'auto'; }, 600);
-        };
-const themeBtn = document.getElementById('darkModeToggle');
-const themeIcon = document.getElementById('themeIcon');
-const body = document.body;
-
-// LocalStoragedan tekshirish
-if (localStorage.getItem('theme') === 'dark') {
-    enableDarkMode();
-}
-
-themeBtn.addEventListener('click', () => {
-    if (body.classList.contains('dark-mode')) {
-        disableDarkMode();
-    } else {
-        enableDarkMode();
-    }
-});
-
-function enableDarkMode() {
-    body.classList.add('dark-mode');
-    themeIcon.classList.replace('fa-moon', 'fa-sun');
-    localStorage.setItem('theme', 'dark');
-}
-
-function disableDarkMode() {
-    body.classList.remove('dark-mode');
-    themeIcon.classList.replace('fa-sun', 'fa-moon');
-    localStorage.setItem('theme', 'light');
-}
-        // ---------------------------------------------------------
-        // IMPROVED UZBEK AUDIO SYSTEM
-        // ---------------------------------------------------------
-        window.handleUzbekAudio = () => {
-            if(state.isReading) {
-                synth.cancel();
-                state.isReading = false;
-                updateAudioUI(false);
-                return;
-            }
-
-            if(!state.isPremium && state.audioLimit <= 0) {
-                showToast("Kunlik audio limit tugadi (3/3)", "fa-clock");
-                return;
-            }
-
-            if(!state.isPremium) {
-                state.audioLimit--;
-                localStorage.setItem('audio_limit', state.audioLimit);
-                showToast(`Audio o'qish faollashdi. Qolgan limit: ${state.audioLimit}`, "fa-headphones");
-            }
-
-            // O'zbekcha matn tayyorlash
-            const textToRead = `${state.activeBook.title}. Ushbu kitob ${state.activeBook.cat} janriga mansub. Hozirda siz MyKitob tizimi orqali sun'iy intellekt yordamida audio mutolaa qilmoqdasiz. Diqqat bilan tinglang.`;
-            
-            const utterance = new SpeechSynthesisUtterance(textToRead);
-            utterance.lang = 'uz-UZ'; // O'zbek tili kodi
-            utterance.rate = 0.85; // Bir oz sekinroq va tiniqroq talaffuz uchun
-            utterance.pitch = 1.1;
-
-            if(uzVoice) {
-                utterance.voice = uzVoice;
-            }
-
-            utterance.onstart = () => {
-                state.isReading = true;
-                updateAudioUI(true);
-            };
-            
-            utterance.onend = () => {
-                state.isReading = false;
-                updateAudioUI(false);
-                showToast("Audio mutolaa yakunlandi.", "fa-check-circle");
-            };
-
-            utterance.onerror = () => {
-                state.isReading = false;
-                updateAudioUI(false);
-                showToast("Xatolik: Brauzeringiz o'zbekcha ovozni qo'llab-quvvatlamaydi.", "fa-exclamation-triangle");
-            };
-
-            synth.speak(utterance);
-        };
-
-        function updateAudioUI(active) {
-            const btn = document.getElementById('audioBtn');
-            const icon = document.getElementById('aIcon');
-            const text = document.getElementById('aText');
-            const label = document.getElementById('audioLabel');
-            const wave = document.getElementById('waveUI');
-
-            if(active) {
-                btn.classList.replace('bg-slate-900', 'bg-red-500');
-                icon.className = 'fa fa-pause text-white';
-                text.innerText = 'AUDIO TO\'XTATISH';
-                label.classList.remove('hidden');
-                wave.classList.remove('hidden');
-            } else {
-                btn.classList.replace('bg-red-500', 'bg-slate-900');
-                icon.className = 'fa fa-play text-amber-400';
-                text.innerText = 'AUDIO O\'QISH (UZB)';
-                label.classList.add('hidden');
-                wave.classList.add('hidden');
-            }
+            return terminateAudioSession();
         }
 
-        // QUIZ & REWARD
-        window.openQuiz = () => {
-            if(!state.activeBook.q) {
-                showToast("Ajoyib! Kitob yakunlandi. +20 C", "fa-check");
-                state.coins += 20;
-                localStorage.setItem('user_coins', state.coins);
-                updateGlobalUI();
-                closeViewer();
-                return;
-            }
-            document.getElementById('quizModal').classList.remove('hidden');
-            document.getElementById('qText').innerText = state.activeBook.q;
-            const options = [state.activeBook.ans, state.activeBook.wrong].sort(() => Math.random() - 0.5);
-            document.getElementById('qOptions').innerHTML = options.map(opt => `
-                <button onclick="checkQuiz('${opt}')" class="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl font-bold text-lg hover:border-blue-500 hover:bg-blue-50 transition-all active:scale-95 text-slate-700">
-                    ${opt}
-                </button>
-            `).join('');
+        if(!state.activeBook) return showNotification("Avval kitobni tanlang", "warning");
+        if(!state.isPremium && state.audioLimit <= 0) return showNotification("Kunlik limit tugadi", "error");
+
+        const intro = `Diqqat bilan tinglang. ... Asar nomi: ${state.activeBook.title}. ... Muallif: ${state.activeBook.author || 'Noma\'lum'}. ... `;
+        const utterance = new SpeechSynthesisUtterance(intro + (state.activeBook.desc || "Mutolaa boshlandi."));
+        
+        utterance.lang = 'uz-UZ';
+        utterance.rate = 0.75; 
+        utterance.pitch = 1.0;
+        if(state.uzVoice) utterance.voice = state.uzVoice;
+
+        utterance.onstart = () => {
+            state.isReading = true;
+            state.visualizerActive = true;
+            updateAudioUI(true);
+            consumeAudioLimit();
         };
 
-        window.checkQuiz = (ans) => {
-            if(ans === state.activeBook.ans) {
-                showToast("To'g'ri javob! +50 COIN", "fa-gift");
-                state.coins += 50;
-            } else {
-                showToast("Afsuski, javob noto'g'ri.", "fa-times-circle");
-            }
-            localStorage.setItem('user_coins', state.coins);
+        utterance.onend = () => terminateAudioSession();
+        utterance.onerror = () => terminateAudioSession();
+
+        synth.speak(utterance);
+    };
+
+    function terminateAudioSession() {
+        state.isReading = false;
+        state.visualizerActive = false;
+        updateAudioUI(false);
+    }
+
+    function consumeAudioLimit() {
+        if(!state.isPremium) {
+            state.audioLimit--;
+            localStorage.setItem('audio_limit', state.audioLimit);
             updateGlobalUI();
-            document.getElementById('quizModal').classList.add('hidden');
-            closeViewer();
-        };
+            addExperience(10); // Audio eshitgani uchun XP
+        }
+    }
 
-        window.buyPremium = () => {
-            if(state.isPremium) return;
-            if(state.coins >= 500) {
-                state.coins -= 500;
-                const expiry = new Date();
-                expiry.setDate(expiry.getDate() + 30);
-                localStorage.setItem('premium_expiry', expiry.toISOString());
-                localStorage.setItem('user_coins', state.coins);
-                state.isPremium = true;
-                updateGlobalUI();
-                renderBooks();
-                toggleCanvas(false);
-                showToast("Tabriklaymiz! Premium 30 kunga faollashtirildi.", "fa-crown");
-            } else showToast("Mablag' yetarli emas!", "fa-lock");
-        };
+    // ==========================================
+    // 5. ANIMATSIYA: AUDIO VISUALIZER
+    // ==========================================
+    function setupVisualizer() {
+        const canvas = document.getElementById('audioCanvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        function animate() {
+            if(!state.visualizerActive) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return requestAnimationFrame(animate);
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for(let i=0; i < 15; i++) {
+                const barHeight = Math.random() * 25 + 5;
+                ctx.fillStyle = i % 2 === 0 ? '#3b82f6' : '#f59e0b';
+                ctx.roundRect(i * 12, (30 - barHeight) / 2, 6, barHeight, 5);
+                ctx.fill();
+            }
+            setTimeout(() => requestAnimationFrame(animate), 80);
+        }
+        animate();
+    }
 
-        window.claimReward = () => {
-            state.coins += 100;
-            localStorage.setItem('user_coins', state.coins);
-            localStorage.setItem('last_login', new Date().toDateString());
-            document.getElementById('rewardModal').classList.add('hidden');
-            updateGlobalUI();
-            showToast("100 COIN hisobingizga qo'shildi!", "fa-coins");
-        };
-
-        // SEARCH & FILTER
-        window.filterBy = (cat) => {
-            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-            document.getElementById(`btn-${cat}`).classList.add('active');
-            const res = cat === 'all' ? state.rawBooks : state.rawBooks.filter(b => b.cat === cat);
-            renderBooks(res);
-        };
-
-        window.searchEngine = () => {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const res = state.rawBooks.filter(b => 
-                b.title.toLowerCase().includes(q) || 
-                b.cat.toLowerCase().includes(q)
-            );
-            renderBooks(res);
-        };
-
-        // FIREBASE SYNC
+    // ==========================================
+    // 6. REALTIME DATABASE LISTENERS
+    // ==========================================
+    function setupRealtimeListeners() {
+        // Kitoblar ro'yxati
         onValue(ref(db, 'kitoblar'), (snap) => {
             state.rawBooks = [];
             snap.forEach(c => state.rawBooks.push({ id: c.key, ...c.val() }));
-            renderBooks();
-            initSystem();
+            filterAndRender();
         });
 
-        window.onload = () => {
-            if(localStorage.getItem('last_login') !== new Date().toDateString()) {
-                setTimeout(() => document.getElementById('rewardModal').classList.remove('hidden'), 2000);
+        // Peshqadamlar jadvali
+        onValue(ref(db, 'leaderboard'), (snap) => {
+            state.leaderboard = [];
+            snap.forEach(c => state.leaderboard.push(c.val()));
+            state.leaderboard.sort((a, b) => b.xp - a.xp);
+            renderLeaderboard();
+        });
+
+        // Sharhlar
+        onValue(ref(db, 'reviews'), (snap) => {
+            state.reviews = snap.val() || {};
+        });
+    }
+
+    // ==========================================
+    // 7. BOOK ENGINE (FILTR VA RENDERING)
+    // ==========================================
+    window.filterByCat = (cat) => {
+        state.currentFilter = cat;
+        const pills = document.querySelectorAll('.cat-pill');
+        pills.forEach(p => p.classList.remove('active', 'bg-blue-600', 'text-white'));
+        document.getElementById('cat-' + cat)?.classList.add('active', 'bg-blue-600', 'text-white');
+        filterAndRender();
+    };
+
+    function filterAndRender() {
+        const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        state.filteredBooks = state.rawBooks.filter(b => {
+            const matchesCat = state.currentFilter === 'all' || b.cat === state.currentFilter;
+            const matchesSearch = b.title.toLowerCase().includes(query) || b.cat.toLowerCase().includes(query);
+            return matchesCat && matchesSearch;
+        });
+        renderBooksGrid();
+    }
+
+    function renderBooksGrid() {
+        const grid = document.getElementById('mainGrid');
+        if(!grid) return;
+
+        grid.innerHTML = state.filteredBooks.map(book => {
+            const unlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_'+book.id);
+            const isFav = state.bookmarks.includes(book.id);
+            
+            return `
+                <div class="book-card group relative bg-white rounded-[40px] p-4 shadow-sm border border-slate-100 hover:shadow-2xl transition-all duration-500">
+                    <div onclick="handleBookAccess('${book.id}')" class="relative overflow-hidden rounded-[30px] aspect-[3/4.4] mb-4 cursor-pointer">
+                        <img src="${book.img}" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                        ${!unlocked ? `
+                            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md flex flex-col items-center justify-center text-white">
+                                <div class="bg-white/20 p-4 rounded-full mb-2"><i class="fa fa-lock text-2xl"></i></div>
+                                <span class="font-bold text-lg">${book.price} C</span>
+                            </div>
+                        ` : ''}
+                        <div class="absolute top-4 right-4 z-10">
+                            <button onclick="event.stopPropagation(); toggleBookmark('${book.id}')" class="w-10 h-10 rounded-full bg-white/90 backdrop-blur shadow-lg flex items-center justify-center">
+                                <i class="${isFav ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart text-slate-400'}"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="px-2">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase tracking-tighter">${book.cat}</span>
+                            <span class="text-[10px] text-slate-400 font-bold"><i class="fa fa-star text-amber-400"></i> 4.9</span>
+                        </div>
+                        <h4 onclick="handleBookAccess('${book.id}')" class="font-black text-slate-800 text-sm line-clamp-1 cursor-pointer group-hover:text-blue-600 transition-colors">${book.title}</h4>
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium italic">${book.author || 'Klassik asar'}</p>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // ==========================================
+    // 8. TAJRIBA VA DARAJA (LEVEL SYSTEM)
+    // ==========================================
+    function addExperience(amt) {
+        state.stats.xp += amt;
+        const nextLevelXp = state.stats.level * 200;
+        
+        if(state.stats.xp >= nextLevelXp) {
+            state.stats.level++;
+            state.stats.xp = 0;
+            showNotification(`Tabriklaymiz! Yangi daraja: ${state.stats.level}`, "success");
+            state.coins += 100; // Daraja oshgani uchun bonus
+        }
+        
+        saveProgress();
+        updateGlobalUI();
+    }
+
+    function saveProgress() {
+        localStorage.setItem('user_stats', JSON.stringify(state.stats));
+        update(ref(db, `users/${state.userId}`), { 
+            stats: state.stats,
+            coins: state.coins,
+            lastActive: serverTimestamp() 
+        });
+        
+        // Leaderboardni yangilash
+        set(ref(db, `leaderboard/${state.userId}`), {
+            username: state.username,
+            xp: (state.stats.level * 200) + state.stats.xp,
+            level: state.stats.level
+        });
+    }
+
+    // ==========================================
+    // 9. BOOK ACCESS VA SOTIB OLISH
+    // ==========================================
+    window.handleBookAccess = (id) => {
+        const book = state.rawBooks.find(x => x.id === id);
+        if(!book) return;
+        state.activeBook = book;
+        
+        const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_'+id);
+        
+        if(!isUnlocked) {
+            if(state.coins >= book.price) {
+                Swal.fire({
+                    title: 'Kitobni ochish',
+                    text: `"${book.title}" asarini ${book.price} tangaga ochishni xohlaysizmi?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3b82f6',
+                    confirmButtonText: 'Ha, ochish',
+                    cancelButtonText: 'Yo\'q'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        finalizePurchase(book);
+                    }
+                });
+            } else {
+                showNotification("Tangalar yetarli emas!", "error");
             }
+        } else {
+            launchReader(book);
+        }
+    };
+
+    function finalizePurchase(book) {
+        state.coins -= book.price;
+        state.stats.booksUnlocked++;
+        localStorage.setItem('u_' + book.id, 'true');
+        localStorage.setItem('user_coins', state.coins);
+        
+        addExperience(50);
+        showNotification("Kitob kutubxonangizga qo'shildi!", "success");
+        updateGlobalUI();
+        launchReader(book);
+    }
+
+    function launchReader(book) {
+        const viewer = document.getElementById('viewer');
+        document.getElementById('vFrame').src = book.pdf;
+        document.getElementById('vTitle').innerText = book.title;
+        
+        viewer.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        addExperience(20);
+        checkAchievements();
+    }
+
+    window.closeViewer = () => {
+        synth.cancel();
+        state.isReading = false;
+        updateAudioUI(false);
+        document.getElementById('viewer').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        document.getElementById('vFrame').src = '';
+    };
+
+    // ==========================================
+    // 10. ACHIEVEMENTS VA DAILY REWARDS
+    // ==========================================
+    function checkAchievements() {
+        const rules = [
+            { id: 'READER_1', limit: 1, title: 'Ilk qadam', icon: 'fa-book' },
+            { id: 'READER_10', limit: 10, title: 'Kitobxon', icon: 'fa-glasses' },
+            { id: 'COIN_1000', limit: 1000, title: 'Boyvachcha', icon: 'fa-coins' }
+        ];
+
+        rules.forEach(rule => {
+            if(!state.achievements.includes(rule.id)) {
+                let achieved = false;
+                if(rule.id.includes('READER') && state.stats.totalRead >= rule.limit) achieved = true;
+                if(rule.id.includes('COIN') && state.coins >= rule.limit) achieved = true;
+                
+                if(achieved) {
+                    state.achievements.push(rule.id);
+                    localStorage.setItem('my_achievements', JSON.stringify(state.achievements));
+                    showAchievementPopup(rule);
+                }
+            }
+        });
+    }
+
+    function showAchievementPopup(rule) {
+        showNotification(`Yangi yutuq: ${rule.title}`, "success");
+        // Firebasega saqlash
+        update(ref(db, `users/${state.userId}`), { achievements: state.achievements });
+    }
+
+    function checkDailyStreak() {
+        const lastLogin = localStorage.getItem('last_login');
+        const today = new Date().toDateString();
+        
+        if(lastLogin !== today) {
+            state.stats.streak++;
+            localStorage.setItem('last_login', today);
+            setTimeout(() => {
+                document.getElementById('rewardModal')?.classList.remove('hidden');
+            }, 3000);
+        }
+    }
+
+    window.claimDailyReward = () => {
+        const reward = 50 + (state.stats.streak * 10);
+        state.coins += reward;
+        updateGlobalUI();
+        saveProgress();
+        document.getElementById('rewardModal').classList.add('hidden');
+        showNotification(`${reward} tanga qabul qilindi!`, "success");
+    };
+
+    // ==========================================
+    // 11. UI VA YORDAMCHI FUNKSIYALAR
+    // ==========================================
+    function updateGlobalUI() {
+        const coinDisplay = document.getElementById('userBalance');
+        if(coinDisplay) coinDisplay.innerText = state.coins.toLocaleString();
+        
+        const xpBar = document.getElementById('xpProgress');
+        if(xpBar) {
+            const percent = (state.stats.xp / (state.stats.level * 200)) * 100;
+            xpBar.style.width = percent + "%";
+        }
+        
+        const lvlDisplay = document.getElementById('userLevel');
+        if(lvlDisplay) lvlDisplay.innerText = "Lvl " + state.stats.level;
+
+        // Limit yangilash
+        const today = new Date().toDateString();
+        if(state.lastAudioDay !== today) {
+            state.audioLimit = 3;
+            state.lastAudioDay = today;
+            localStorage.setItem('audio_limit', 3);
+            localStorage.setItem('last_audio_day', today);
+        }
+    }
+
+    function showNotification(msg, type = 'info') {
+        const colors = {
+            success: 'bg-emerald-500',
+            error: 'bg-red-500',
+            warning: 'bg-amber-500',
+            info: 'bg-blue-500'
         };
-    </script>
+        
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-24 left-1/2 -translate-x-1/2 ${colors[type]} text-white px-6 py-3 rounded-2xl shadow-2xl z-[9999] font-bold animate-bounce`;
+        toast.innerHTML = `<i class="fa fa-info-circle mr-2"></i> ${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    window.toggleBookmark = (id) => {
+        if(state.bookmarks.includes(id)) {
+            state.bookmarks = state.bookmarks.filter(x => x !== id);
+        } else {
+            state.bookmarks.push(id);
+            addExperience(5);
+        }
+        localStorage.setItem('my_bookmarks', JSON.stringify(state.bookmarks));
+        renderBooksGrid();
+    };
+
+    window.toggleQR = (show) => {
+        const modal = document.getElementById('qrModal');
+        if(show) {
+            const qrImg = document.getElementById('qrImg');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(location.href)}`;
+            modal.classList.remove('hidden');
+        } else modal.classList.add('hidden');
+    };
+
+    // ==========================================
+    // 12. RUNTIME (START)
+    // ==========================================
+    window.onload = initSystem;
+    
+    // Antivirus / Anti-cheat (Oddiy coin o'zgarishini oldini olish)
+    setInterval(() => {
+        const localCoins = parseInt(localStorage.getItem('user_coins'));
+        if(isNaN(localCoins)) localStorage.setItem('user_coins', state.coins);
+    }, 5000);
+
+</script>
 </body>
 
 </html>
+
 
 
 
