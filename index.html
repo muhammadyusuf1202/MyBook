@@ -469,7 +469,78 @@ window.toggleQRModal = (val) => {
         };
 
         window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
+        // ... (Sizning kodingiz davomi)
+window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
 
+// --- MENING AUDIO KODLARIMNI SHU YERDAN BOSHLAB QO'SHING ---
+
+window.handleUzbekAudio = () => {
+    // Agar hozir gapirayotgan bo'lsa - to'xtatish
+    if (synth.speaking) {
+        synth.cancel();
+        state.isReading = false;
+        updateAudioUI(false);
+        return;
+    }
+
+    // Premium va limit tekshiruvi
+    if (!state.isPremium && state.audioLimit <= 0) {
+        showToast("Kunlik audio limit tugadi (3/3)", "fa-clock");
+        return;
+    }
+
+    if (!state.activeBook) {
+        showToast("Iltimos, avval kitobni tanlang", "fa-book");
+        return;
+    }
+
+    // Limitdan ayirish
+    if (!state.isPremium) {
+        state.audioLimit--;
+        localStorage.setItem('audio_limit', state.audioLimit);
+        showToast(`Qolgan limit: ${state.audioLimit}`, "fa-headphones");
+    }
+
+    // O'zbekcha matn (pauzalar bilan)
+    const textToRead = `${state.activeBook.title}. ... Bu kitob ${state.activeBook.cat} janriga mansub. ... Marhamat, tinglang.`;
+    
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    
+    // SOZLAMALAR - Tushunarli bo'lishi uchun
+    utterance.lang = 'uz-UZ';
+    utterance.rate = 0.7; // Sekin va tushunarli
+    utterance.pitch = 1.0;
+    utterance.voice = uzVoice; // Sizning loadVoices() funksiyangiz topgan ovoz
+
+    utterance.onstart = () => {
+        state.isReading = true;
+        updateAudioUI(true);
+    };
+
+    utterance.onend = () => {
+        state.isReading = false;
+        updateAudioUI(false);
+        showToast("Mutolaa yakunlandi", "fa-check");
+    };
+
+    synth.speak(utterance);
+};
+
+// UI ni yangilash funksiyasi
+function updateAudioUI(active) {
+    const btn = document.getElementById('audioBtn');
+    const icon = document.getElementById('aIcon');
+    if(!btn || !icon) return;
+
+    if (active) {
+        btn.classList.add('bg-red-500', 'animate-pulse');
+        icon.className = 'fa fa-pause text-white';
+    } else {
+        btn.classList.remove('bg-red-500', 'animate-pulse');
+        btn.classList.add('bg-slate-900');
+        icon.className = 'fa fa-play text-amber-400';
+    }
+}
         // BOOK ENGINE
         window.renderBooks = (data = state.rawBooks) => {
             const grid = document.getElementById('mainGrid');
@@ -737,6 +808,7 @@ function disableDarkMode() {
 </body>
 
 </html>
+
 
 
 
