@@ -88,57 +88,53 @@ body {
     </div>
 
     <nav class="glass sticky top-0 z-[1000] px-8 py-6">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-14">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-14">
             <a href="#" class="text-3xl font-black tracking-tighter flex items-center gap-3 group">
-    <div class="w-12 h-12 rounded-2xl overflow-hidden shadow-xl group-hover:rotate-12 transition-transform duration-500 border border-slate-100">
-        <img src="icon.png" alt="MyKitob" class="w-full h-full object-cover">
-    </div>
-    
-    <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">MyBook</span><span class="text-blue-600">.UZ</span>
-</a>
-                
-                <div class="hidden lg:flex items-center bg-slate-100/80 rounded-[22px] px-6 py-3.5 w-[450px] border-2 border-transparent focus-within:border-blue-400 focus-within:bg-white transition-all shadow-sm">
-                    <i class="fa fa-search text-slate-400 mr-4"></i>
-                    <input type="text" id="searchInput" onkeyup="searchEngine()" placeholder="Muallif, asar nomi yoki janr..." class="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700">
+                <div class="w-12 h-12 rounded-2xl overflow-hidden shadow-xl group-hover:rotate-12 transition-transform duration-500 border border-slate-100">
+                    <img src="icon.png" alt="MyKitob" class="w-full h-full object-cover">
                 </div>
-            </div>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">MyBook</span><span class="text-blue-600">.UZ</span>
+            </a>
             
-            <div class="flex items-center gap-6">
-                <div class="hidden sm:flex items-center gap-4 bg-white shadow-sm border border-slate-100 px-6 py-3 rounded-2xl">
-                    <div class="relative"><i class="fa fa-coins text-amber-500 text-2xl"></i><span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span></div>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Hamyon</span>
-                        <span id="userBalance" class="text-base font-black text-slate-800">0</span>
-                    </div>
-                </div>
-                  <button id="darkModeToggle" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-105 transition-all">
-                <i id="themeIcon" class="fa fa-moon text-slate-600 dark:text-amber-400"></i>
-                      <button onclick="toggleQRModal(true)" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-90">
-    <i class="fa fa-qrcode text-xl"></i>
-</button>
-                      <button onclick="toggleQRModal(true)" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg transition-all active:scale-90">
-        <i class="fa fa-qrcode text-lg md:text-xl"></i>
-    </button>
-            </button>
-                <button onclick="toggleCanvas(true)" class="bg-slate-900 text-white px-8 py-4 rounded-[20px] font-black flex items-center gap-3 hover:bg-blue-700 transition-all shadow-2xl active:scale-95">
-                    <i class="fa fa-crown text-amber-400 text-xl"></i> 
-                    <span class="hidden md:inline">PREMIUM</span>
-                </button>
+            <div class="hidden lg:flex items-center bg-slate-100/80 rounded-[22px] px-6 py-3.5 w-[450px] border-2 border-transparent focus-within:border-blue-400 focus-within:bg-white transition-all shadow-sm">
+                <i class="fa fa-search text-slate-400 mr-4"></i>
+                <input type="text" id="searchInput" onkeyup="searchEngine()" placeholder="Muallif, asar nomi yoki janr..." class="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700">
             </div>
         </div>
-   
-    </nav>
+        
+        <div class="flex items-center gap-6">
+            <div class="hidden sm:flex items-center gap-4 bg-white shadow-sm border border-slate-100 px-6 py-3 rounded-2xl">
+                <div class="relative"><i class="fa fa-coins text-amber-500 text-2xl"></i><span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span></div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Hamyon</span>
+                    <span id="userBalance" class="text-base font-black text-slate-800">0</span>
+                </div>
+            </div>
+
+            <button id="darkModeToggle" class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-105 transition-all">
+                <i id="themeIcon" class="fa fa-moon text-slate-600 dark:text-amber-400"></i>
+            </button>
+
+            <button onclick="toggleQRModal(true)" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg transition-all active:scale-90">
+                <i class="fa fa-qrcode text-xl"></i>
+            </button>
+
+            <button onclick="toggleCanvas(true)" class="bg-slate-900 text-white px-8 py-4 rounded-[20px] font-black flex items-center gap-3 hover:bg-blue-700 transition-all shadow-2xl active:scale-95">
+                <i class="fa fa-crown text-amber-400 text-xl"></i> 
+                <span class="hidden md:inline">PREMIUM</span>
+            </button>
+        </div>
+    </div>
+</nav>
 <div id="qrModal" class="fixed inset-0 z-[8000] bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-6" onclick="toggleQRModal(false)">
     <div class="bg-white rounded-[40px] p-8 max-w-sm w-full text-center shadow-2xl relative" onclick="event.stopPropagation()">
-        
         <h3 class="text-2xl font-black text-slate-900 mb-1">MyBook Ilova</h3>
         <p class="text-slate-400 font-bold text-[10px] mb-6 uppercase tracking-widest">Telefoningizda skanerlang</p>
         
         <div class="bg-slate-50 p-4 rounded-[30px] border-2 border-dashed border-slate-200 mb-6">
             <img id="qrImageElement" src="" alt="QR Code" class="w-full aspect-square rounded-2xl shadow-sm">
         </div>
-
         <button onclick="toggleQRModal(false)" class="w-full bg-slate-100 py-4 rounded-2xl font-black text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all text-xs uppercase">Yopish</button>
     </div>
 </div>
@@ -384,11 +380,11 @@ window.toggleQRModal = (val) => {
     const qrImg = document.getElementById('qrImageElement');
     
     if(val) {
-        // APK faylingiz manzili
+        // Fayl manzilingizni shu yerga yozing
         const apkUrl = window.location.origin + "/MyBook.apk";
         
-        // Google API orqali QR-kod rasmiga havola yaratish
-        qrImg.src = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(apkUrl)}&choe=UTF-8`;
+        // Tashqi sayt (API) orqali QR yaratish
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(apkUrl)}`;
         
         modal.classList.remove('hidden');
     } else {
@@ -741,6 +737,7 @@ function disableDarkMode() {
 </body>
 
 </html>
+
 
 
 
