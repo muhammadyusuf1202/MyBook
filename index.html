@@ -350,109 +350,119 @@ body {
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // FIREBASE KONFIGURATSIYASI
-    const firebaseConfig = { databaseURL: "https://mybook-67510-default-rtdb.firebaseio.com/" };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+// FIREBASE KONFIGURATSIYASI
+const firebaseConfig = { databaseURL: "https://mybook-67510-default-rtdb.firebaseio.com/" };
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    // TIZIM HOLATI (STATE)
-    let state = {
-        rawBooks: [], // Barcha kitoblar shu yerga yig'iladi
-        coins: parseInt(localStorage.getItem('user_coins')) || 50,
-        isPremium: false,
-        audioLimit: parseInt(localStorage.getItem('audio_limit')) || 3,
-        lastAudioDay: localStorage.getItem('last_audio_day'),
-        activeBook: null,
-        isReading: false,
-        userId: Math.floor(100000 + Math.random() * 900000)
-    };
+// TIZIM HOLATI (STATE)
+let state = {
+    rawBooks: [], // Barcha kitoblar shu yerga yig'iladi
+    coins: parseInt(localStorage.getItem('user_coins')) || 50,
+    isPremium: false,
+    audioLimit: parseInt(localStorage.getItem('audio_limit')) || 3,
+    lastAudioDay: localStorage.getItem('last_audio_day'),
+    activeBook: null,
+    isReading: false,
+    userId: Math.floor(100000 + Math.random() * 900000)
+};
 
-    const synth = window.speechSynthesis;
-    let uzVoice = null;
-    let adminAudio = null; // Admin yuklagan audio fayl uchun obyekt
+const synth = window.speechSynthesis;
+let uzVoice = null;
+let currentAudio = null; // Admin yuklagan audio fayl uchun obyekt
 
-    // TIZIMNI ISHGA TUSHIRISH
-    function initSystem() {
-        checkPremiumStatus();
-        updateGlobalUI();
-        loadVoices();
+// TIZIMNI ISHGA TUSHIRISH
+function initSystem() {
+    checkPremiumStatus();
+    updateGlobalUI();
+    loadVoices();
+    if(document.getElementById('userId')) {
         document.getElementById('userId').innerText = state.userId;
     }
+}
 
-    // OVOZLARNI YUKLASH (ROBOT OVOZI UCHUN)
-    function loadVoices() {
-        let voices = synth.getVoices();
-        // O'zbek yoki Turk ovozini qidirish
-        uzVoice = voices.find(v => v.lang.includes('uz') || v.lang.includes('TR'));
-        if (!uzVoice) uzVoice = voices.find(v => v.lang.includes('en')); 
+// OVOZLARNI YUKLASH (ROBOT OVOZI UCHUN)
+function loadVoices() {
+    let voices = synth.getVoices();
+    // O'zbek yoki Turk ovozini qidirish (agar uz-UZ bo'lmasa, tr-TR yaqinroq eshitiladi)
+    uzVoice = voices.find(v => v.lang.includes('uz') || v.lang.includes('TR'));
+    if (!uzVoice) uzVoice = voices.find(v => v.lang.includes('en')); 
+}
+
+window.speechSynthesis.onvoiceschanged = loadVoices;
+
+// --- FIREBASE SYNC: HAMMA KITOBLARNI CHIQARISH ---
+onValue(ref(db, 'kitoblar'), (snap) => {
+    const data = snap.val();
+    if (data) {
+        // Firebase obyektini to'liq massivga aylantirish (Hammasi chiqishi uchun)
+        state.rawBooks = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+        }));
+        
+        console.log("Bazadan yuklangan jami kitoblar:", state.rawBooks.length);
+        
+        // Kitoblarni ekranga chiqarish
+        window.renderBooks(state.rawBooks);
+        initSystem();
+    } else {
+        state.rawBooks = [];
+        window.renderBooks([]);
+    }
+});
+
+// --- BOOK ENGINE: GRID VA KITOBLARNI RENDER QILISH ---
+window.renderBooks = (data = state.rawBooks) => {
+    const grid = document.getElementById('mainGrid');
+    if(!grid) return;
+    
+    // Kitoblar sonini UI da yangilash
+    if(document.getElementById('count')) {
+        document.getElementById('count').innerText = data.length;
+    }
+    
+    if(!data || data.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
+        return;
     }
 
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-
-    // --- FIREBASE SYNC: HAMMA KITOBLARNI CHIQARISH ---
-    onValue(ref(db, 'kitoblar'), (snap) => {
-        const data = snap.val();
-        if (data) {
-            // Firebase obyektini to'liq massivga aylantirish (Hamma kitob chiqishi uchun)
-            state.rawBooks = Object.keys(data).map(key => ({
-                id: key,
-                ...data[key]
-            }));
-            
-            console.log("Jami kitoblar:", state.rawBooks.length);
-            
-            // Kitoblarni ekranga chiqarish
-            window.renderBooks(state.rawBooks);
-            initSystem();
-        } else {
-            state.rawBooks = [];
-            window.renderBooks([]);
-        }
-    });
-
-    // --- BOOK ENGINE: RANKING VA GRID ---
-    window.renderBooks = (data = state.rawBooks) => {
-        const grid = document.getElementById('mainGrid');
+    // KITOBLARNI GRIDGA JOYLASHTIRISH
+    grid.innerHTML = data.reverse().map(book => {
+        // Kitob qulfdan ochilganmi yoki yo'qmi tekshirish
+        const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_' + book.id);
         
-        // Kitoblar sonini UI da yangilash
-        if(document.getElementById('count')) {
-            document.getElementById('count').innerText = data.length;
-        }
-        
-        if(!data || data.length === 0) {
-            grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
-            return;
-        }
-
-        // KITOBLARNI GRIDGA JOYLASHTIRISH
-        grid.innerHTML = data.map(book => {
-            const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_' + book.id);
-            
-            return `
-                <div onclick="window.handleBookAccess('${book.id}')" class="group cursor-pointer">
-                    <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
-                        <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
-                             onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
-                        
-                        ${book.isCoin && !isUnlocked ? `
-                            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
-                                    <i class="fa fa-lock text-amber-500"></i> ${book.price} C
-                                </div>
+        return `
+            <div onclick="window.handleBookAccess('${book.id}')" class="group cursor-pointer">
+                <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
+                    <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
+                         onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
+                    
+                    ${book.isCoin && !isUnlocked ? `
+                        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                            <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
+                                <i class="fa fa-lock text-amber-500"></i> ${book.price} C
                             </div>
-                            <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
-                        ` : ''}
-                    </div>
-                    <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
-                    <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat || 'Ertak'}
-                    </p>
-                </div>`;
-        }).join('');
-    };
+                        </div>
+                        <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
+                    ` : ''}
+
+                    ${book.audioUrl ? `
+                        <div class="absolute bottom-6 left-6 bg-blue-500/80 backdrop-blur text-white p-2 rounded-full shadow-lg">
+                             <i class="fa fa-volume-up text-[10px]"></i>
+                        </div>
+                    ` : ''}
+                </div>
+                <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
+                <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat || 'Ertak'}
+                </p>
+            </div>`;
+    }).join('');
+};
 
         window.handleBookAccess = (id) => {
             const book = state.rawBooks.find(x => x.id === id);
@@ -686,6 +696,7 @@ function disableDarkMode() {
     </script>
 </body>
 </html>
+
 
 
 
