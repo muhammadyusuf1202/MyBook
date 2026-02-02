@@ -82,42 +82,60 @@ body {
         </div>
     </div>
 
-    <nav class="glass sticky top-0 z-[1000] px-8 py-6">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-14">
-            <a href="#" class="text-3xl font-black tracking-tighter flex items-center gap-3 group">
-    <div class="w-12 h-12 rounded-2xl overflow-hidden shadow-xl group-hover:rotate-12 transition-transform duration-500 border border-slate-100">
-        <img src="icon.png" alt="MyKitob" class="w-full h-full object-cover">
-    </div>
-    
-    <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">MyBook</span><span class="text-blue-600">.UZ</span>
-</a>
-                
-                <div class="hidden lg:flex items-center bg-slate-100/80 rounded-[22px] px-6 py-3.5 w-[450px] border-2 border-transparent focus-within:border-blue-400 focus-within:bg-white transition-all shadow-sm">
-                    <i class="fa fa-search text-slate-400 mr-4"></i>
-                    <input type="text" id="searchInput" onkeyup="searchEngine()" placeholder="Muallif, asar nomi yoki janr..." class="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700">
+<nav class="glass sticky top-0 z-[1000] px-4 md:px-8 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-4 md:gap-10">
+            <a href="#" class="text-2xl md:text-3xl font-black tracking-tighter flex items-center gap-2 group">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden shadow-xl border border-slate-100">
+                    <img src="icon.png" alt="MyKitob" class="w-full h-full object-cover">
                 </div>
-            </div>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">MyBook</span><span class="text-blue-600">.UZ</span>
+            </a>
             
-            <div class="flex items-center gap-6">
-                <div class="hidden sm:flex items-center gap-4 bg-white shadow-sm border border-slate-100 px-6 py-3 rounded-2xl">
-                    <div class="relative"><i class="fa fa-coins text-amber-500 text-2xl"></i><span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span></div>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Hamyon</span>
-                        <span id="userBalance" class="text-base font-black text-slate-800">0</span>
-                    </div>
-                </div>
-                  <button id="darkModeToggle" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-105 transition-all">
-                <i id="themeIcon" class="fa fa-moon text-slate-600 dark:text-amber-400"></i>
-            </button>
-                <button onclick="toggleCanvas(true)" class="bg-slate-900 text-white px-8 py-4 rounded-[20px] font-black flex items-center gap-3 hover:bg-blue-700 transition-all shadow-2xl active:scale-95">
-                    <i class="fa fa-crown text-amber-400 text-xl"></i> 
-                    <span class="hidden md:inline">PREMIUM</span>
-                </button>
+            <div class="hidden lg:flex items-center bg-slate-100/80 rounded-2xl px-5 py-3 w-[350px] border-2 border-transparent focus-within:border-blue-400 focus-within:bg-white transition-all">
+                <i class="fa fa-search text-slate-400 mr-3"></i>
+                <input type="text" id="searchInput" onkeyup="searchEngine()" placeholder="Qidirish..." class="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700">
             </div>
         </div>
-   
-    </nav>
+        
+        <div class="flex items-center gap-2 md:gap-5">
+            <button onclick="toggleQRModal(true)" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm group">
+                <i class="fa fa-qrcode text-lg md:text-xl"></i>
+                <span class="hidden lg:block absolute -bottom-10 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Ilovani yuklash</span>
+            </button>
+
+            <div class="flex items-center gap-2 bg-white shadow-sm border border-slate-100 px-3 py-2 md:px-5 md:py-3 rounded-xl">
+                <i class="fa fa-coins text-amber-500 text-lg md:text-xl"></i>
+                <span id="userBalance" class="text-xs md:text-base font-black text-slate-800">0</span>
+            </div>
+
+            <button id="darkModeToggle" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-100 flex items-center justify-center hover:scale-105 transition-all">
+                <i id="themeIcon" class="fa fa-moon text-slate-600"></i>
+            </button>
+
+            <button onclick="toggleCanvas(true)" class="bg-slate-900 text-white p-3 md:px-7 md:py-4 rounded-xl font-black flex items-center gap-2 hover:bg-blue-700 transition-all shadow-xl active:scale-95">
+                <i class="fa fa-crown text-amber-400 text-lg"></i> 
+                <span class="hidden sm:inline text-xs">PREMIUM</span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div id="qrModal" class="fixed inset-0 z-[8000] bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center p-6" onclick="toggleQRModal(false)">
+    <div class="bg-white rounded-[40px] p-8 md:p-12 max-w-sm w-full text-center shadow-2xl" onclick="event.stopPropagation()">
+        <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6">
+            <i class="fa fa-mobile-alt"></i>
+        </div>
+        <h3 class="text-2xl font-black text-slate-900 mb-2">Mobil Ilova</h3>
+        <p class="text-slate-400 font-bold text-sm mb-8 leading-relaxed">QR-kodni skanerlang va MyBook APK ilovasini to'g'ridan-to'g'ri yuklab oling.</p>
+        
+        <div class="bg-slate-50 p-6 rounded-[30px] border-2 border-dashed border-slate-200 mb-8">
+            <img id="qrImage" src="" alt="QR Code" class="w-full aspect-square rounded-xl shadow-sm">
+        </div>
+
+        <button onclick="toggleQRModal(false)" class="w-full bg-slate-100 text-slate-600 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all">YOPISH</button>
+    </div>
+</div>
 
     <div id="canvasBox">
         <div class="canvas-overlay" onclick="toggleCanvas(false)"></div>
@@ -353,7 +371,7 @@ body {
         const firebaseConfig = { databaseURL: "https://classicteam-cbf34-default-rtdb.firebaseio.com/" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
+        
         // SYSTEM STATE
         let state = {
             rawBooks: [],
@@ -401,7 +419,20 @@ body {
                 }
             }
         }
-
+        window.toggleQRModal = (val) => {
+    const modal = document.getElementById('qrModal');
+    const qrImg = document.getElementById('qrImage');
+    
+    if(val) {
+        // APK faylingizning real URL manzilini shu yerga yozing
+        const apkUrl = "https://mybook-uz.vercel.app/mybook.apk"; 
+        // Google Chart API orqali avtomatik QR-kod yaratish
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(apkUrl)}`;
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+};
         function updateGlobalUI() {
             document.getElementById('userBalance').innerText = state.coins.toLocaleString();
             document.getElementById('canvasCoin').innerText = state.coins.toLocaleString() + " C";
@@ -698,4 +729,5 @@ function disableDarkMode() {
         };
     </script>
 </body>
+
 </html>
