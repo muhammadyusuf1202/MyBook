@@ -437,38 +437,47 @@ body {
         window.toggleCanvas = (val) => document.body.classList.toggle('canvas-active', val);
 
         // BOOK ENGINE
-        window.renderBooks = (data = state.rawBooks) => {
-            const grid = document.getElementById('mainGrid');
-            document.getElementById('count').innerText = data.length;
-            
-            if(data.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
-                return;
-            }
+       window.renderBooks = (data = state.rawBooks) => {
+    const grid = document.getElementById('mainGrid');
+    
+    // Kitoblar sonini yangilash
+    if(document.getElementById('count')) {
+        document.getElementById('count').innerText = data.length;
+    }
+    
+    // Agar kitob bo'lmasa
+    if(!data || data.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-20 text-center font-bold text-slate-400">Kitob topilmadi...</div>`;
+        return;
+    }
 
-            grid.innerHTML = data.map(book => {
-                const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_'+book.id);
-                return `
-                    <div onclick="handleBookAccess('${book.id}')" class="group cursor-pointer">
-                        <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
-                            <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
-                                 onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
-                            ${book.isCoin && !isUnlocked ? `
-                                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                    <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
-                                        <i class="fa fa-lock text-amber-500"></i> ${book.price} C
-                                    </div>
-                                </div>
-                                <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
-                            ` : ''}
+    // Kitoblarni chiqarish
+    grid.innerHTML = data.map(book => {
+        // Kitob qulofdan ochilganmi yoki yo'qmi tekshirish
+        const isUnlocked = state.isPremium || !book.isCoin || localStorage.getItem('u_' + book.id);
+        
+        return `
+            <div onclick="window.handleBookAccess('${book.id}')" class="group cursor-pointer">
+                <div class="relative overflow-hidden rounded-[40px] aspect-[3/4.6] mb-6 card-shadow bg-white border border-slate-50">
+                    <img src="${book.img}" class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2" 
+                         onerror="this.src='https://images.unsplash.com/photo-1543004407-0f9bd3b0adad?q=80&w=300&auto=format&fit=crop'">
+                    
+                    ${book.isCoin && !isUnlocked ? `
+                        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                            <div class="bg-white px-6 py-3 rounded-2xl font-black text-sm text-slate-900 flex items-center gap-3 shadow-2xl">
+                                <i class="fa fa-lock text-amber-500"></i> ${book.price} C
+                            </div>
                         </div>
-                        <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
-                        <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat}
-                        </p>
-                    </div>`;
-            }).join('');
-        };
+                        <div class="absolute top-6 right-6 bg-amber-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg border border-white/20">PULLIK</div>
+                    ` : ''}
+                </div>
+                <h4 class="font-black text-slate-800 text-base line-clamp-1 px-2 group-hover:text-blue-600 transition-colors">${book.title}</h4>
+                <p class="text-[11px] text-slate-400 font-bold mt-2 uppercase tracking-[2px] px-2 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> ${book.cat || 'Ertak'}
+                </p>
+            </div>`;
+    }).join(''); // Barcha kitoblarni bitta string qilib birlashtiradi
+};
 
         window.handleBookAccess = (id) => {
             const book = state.rawBooks.find(x => x.id === id);
@@ -702,5 +711,6 @@ function disableDarkMode() {
     </script>
 </body>
 </html>
+
 
 
