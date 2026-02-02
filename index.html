@@ -112,9 +112,9 @@ body {
                         <span id="userBalance" class="text-base font-black text-slate-800">0</span>
                     </div>
                 </div>
-                <div class="cursor-pointer w-12 h-12 flex items-center justify-center rounded-2xl border border-blue-500/30 text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm" onclick="toggleQRModal(true)">
+                <button onclick="toggleQRModal(true)" class="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center hover:bg-blue-600 transition-all shadow-lg active:scale-90">
     <i class="fa-solid fa-qrcode text-xl"></i>
-</div>
+</button>
                   <button id="darkModeToggle" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:scale-105 transition-all">
                 <i id="themeIcon" class="fa fa-moon text-slate-600 dark:text-amber-400"></i>
                       <button onclick="toggleQRModal(true)" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-90">
@@ -129,21 +129,17 @@ body {
         </div>
    
     </nav>
-<div id="qrModal" class="fixed inset-0 z-[8000] bg-slate-900/60 backdrop-blur-md hidden flex items-center justify-center p-6" onclick="toggleQRModal(false)">
+<div id="qrModal" class="fixed inset-0 z-[8000] bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-6" onclick="toggleQRModal(false)">
     <div class="bg-white rounded-[40px] p-8 max-w-sm w-full text-center shadow-2xl relative" onclick="event.stopPropagation()">
         
-        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-6">
-            <i class="fa-solid fa-mobile-screen"></i>
-        </div>
-
-        <h3 class="text-2xl font-black text-slate-900 mb-2">Mobil Ilova</h3>
-        <p class="text-slate-400 font-bold text-xs mb-8 uppercase tracking-widest">Skanerlang va yuklang</p>
+        <h3 class="text-2xl font-black text-slate-900 mb-1">MyBook Ilova</h3>
+        <p class="text-slate-400 font-bold text-[10px] mb-6 uppercase tracking-widest">Telefoningizda skanerlang</p>
         
-        <div class="bg-slate-50 p-4 rounded-[35px] border-2 border-dashed border-slate-200 mb-8">
-            <img src="qr-kod-rasmi.png" alt="QR Code" class="w-full aspect-square rounded-2xl shadow-sm">
+        <div class="bg-slate-50 p-4 rounded-[30px] border-2 border-dashed border-slate-200 mb-6">
+            <img id="qrImageElement" src="" alt="QR Code" class="w-full aspect-square rounded-2xl shadow-sm">
         </div>
 
-        <button onclick="toggleQRModal(false)" class="w-full bg-slate-100 text-slate-500 py-4 rounded-2xl font-black hover:bg-red-50 hover:text-red-500 transition-all text-[10px] tracking-widest uppercase">Yopish</button>
+        <button onclick="toggleQRModal(false)" class="w-full bg-slate-100 py-4 rounded-2xl font-black text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all text-xs uppercase">Yopish</button>
     </div>
 </div>
     <div id="canvasBox">
@@ -383,9 +379,17 @@ body {
         const db = getDatabase(app);
         let isQRReady = false;
 
-window.toggleQRModal = (show) => {
+window.toggleQRModal = (val) => {
     const modal = document.getElementById('qrModal');
-    if(show) {
+    const qrImg = document.getElementById('qrImageElement');
+    
+    if(val) {
+        // APK faylingiz manzili
+        const apkUrl = window.location.origin + "/MyBook.apk";
+        
+        // Google API orqali QR-kod rasmiga havola yaratish
+        qrImg.src = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodeURIComponent(apkUrl)}&choe=UTF-8`;
+        
         modal.classList.remove('hidden');
     } else {
         modal.classList.add('hidden');
@@ -737,6 +741,7 @@ function disableDarkMode() {
 </body>
 
 </html>
+
 
 
 
