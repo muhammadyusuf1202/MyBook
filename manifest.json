@@ -1,6 +1,6 @@
 {
   "name": "MyBook.UZ - AI Audio Kutubxona",
-  "short_name": "MyKitob",
+  "short_name": "MyBook",
   "description": "Bolalar va kattalar uchun audio kitoblar va ijod maydonchasi.",
   "start_url": "/",
   "display": "standalone",
